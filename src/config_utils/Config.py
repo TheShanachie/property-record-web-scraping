@@ -20,8 +20,9 @@ class Config:
             Ensures the `Config` class is a singleton. Loads the configuration file if the
             instance is created for the first time.
         - _load_config(self, config_file):
-            Loads the YAML configuration file into a dictionary. Raises a `FileNotFoundError`
-            if the file does not exist.
+            Loads the YAML configuration file into a dictionary. Returns None if the file cannot be loaded.
+        - read_config(cls, config_file='./ConfigUtils/config.yaml'):
+            Reloads the configuration from a new YAML file, overwriting any previous configuration.
         - get_config(cls):
             Returns the entire configuration dictionary.
         - get(cls, key):
@@ -35,22 +36,34 @@ class Config:
     Exceptions:
         - FileNotFoundError: Raised if the specified configuration file does not exist.
     Note:
-        - The default configuration file path is './ConfigUtils/config.yaml'. This can be
-          overridden by passing a different path when creating the `Config` instance.
+        - The default configuration file path is './config_utils/config.yaml'. This can be
+          overridden by passing a different path when creating the `Config` instance. One 
+          may also use the `read_config` method to load a different configuration file.
     """
     _instance = None
 
-    def __new__(cls, config_file='./ConfigUtils/config.yaml'):
+    def __new__(cls, config_file='./config_utils/config.yaml'):
         if cls._instance is None:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance._load_config(config_file)
         return cls._instance
 
     def _load_config(self, config_file):
-        if not os.path.exists(config_file):
-            raise FileNotFoundError(f"Config file {config_file} not found.")
-        with open(config_file, 'r') as file:
-            self._config = yaml.safe_load(file)
+        try:
+            with open(config_file, 'r') as file:
+                self._config = yaml.safe_load(file)
+        except:
+            # Could not load config details from the path provided.
+            return None
+            
+    @classmethod
+    def read_config(cls, config_file='./ConfigUtils/config.yaml'):
+        """
+        Overwrite any previous configuration details which have been loaded into the class.
+        This method attempts to read from a new configuration 'yaml' file.       
+        """
+        cls._instance = super(Config, cls).__new__(cls)
+        cls._instance._load_config(config_file)
     
     @classmethod
     def get_config(cls):

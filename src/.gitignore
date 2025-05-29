@@ -6,3 +6,6 @@ src/
 *.log
 *.html
 *.xml
+
+# Ignore the config file.
+*.yaml

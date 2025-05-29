@@ -7,10 +7,10 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from typing import Callable
 from .GetElement import expect_web_element, wait_for_page, wait_for_subpage
-from LoggingUtils import WebScrapeLogger
+from logging_utils import WebScrapeLogger
 from .RecordScraper import next_record, parse_record
 from .RecordSearch import submit_address_search
-from ConfigUtils import Config
+from config_utils import Config
 
 class Driver:
     """
@@ -62,8 +62,13 @@ class Driver:
         self.chrome_options = Options()
         for arg in self.config["chrome-options"]:
             self.chrome_options.add_argument(arg)
+            
+        # Chrome options for user data
+        self.chrome_options.add_argument("--no-first-run")
+        self.chrome_options.add_argument("--disable-popup-blocking")
+        self.chrome_options.add_argument("--incognito")
 
-        # Set binary location for chrom
+        # Set binary location for chrome
         self.chrome_options.binary_location = self.config["chrome-path"]
             
         ## Set path to chromedriver as per configuration
@@ -79,7 +84,8 @@ class Driver:
         
         # Choose Chrome Browser
         self.driver = webdriver.Chrome(
-            service=self.webdriver_service, options=self.chrome_options
+            service=self.webdriver_service, 
+            options=self.chrome_options
         )
         
         # Open the website

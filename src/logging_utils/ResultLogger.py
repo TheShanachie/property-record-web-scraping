@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 from bson.objectid import ObjectId
 import os
-from ConfigUtils import Config
+from config_utils import Config
 
 
 class MongoDBConnection:

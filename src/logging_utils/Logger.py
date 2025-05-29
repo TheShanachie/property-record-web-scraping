@@ -16,7 +16,7 @@ AI Assistant: Claude 3.5 Haiku by Anthropic
 
 # Import basic utilities
 from selenium.webdriver.remote.webdriver import WebDriver
-from ConfigUtils import Config
+from config_utils import Config
 import logging, os, datetime
 class WebScrapeLogger:    
     
@@ -63,12 +63,6 @@ class WebScrapeLogger:
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
         
-        ### For dumping driver source in emergency ###
-        self.source_dump_dir = Config.get("emergency-dump")['emergency-dump-dir']
-        if not os.path.exists(self.source_dump_dir):
-            os.makedirs(self.source_dump_dir)
-            
-        ### Dump Database Connection ###
     
     @classmethod
     def error(cls, msg: str = "No error message was provided"):
@@ -97,8 +91,6 @@ class WebScrapeLogger:
         
     @classmethod
     def dump_driver_source(cls, data: str):
-        instance = cls()
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")[:-3]
-        filename = f"{timestamp}-dump.html"
-        with open(instance.source_dump_dir + filename, "w") as f:
-            f.write(data)
+        # This method is used to dump the source of the driver in case of an emergency.
+        # It is not used in the current implementation, but it can be used in the future.
+        return None

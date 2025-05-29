@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from typing import Callable
 from .GetElement import expect_web_element, expect_web_elements, check_web_element
-from LoggingUtils import WebScrapeLogger
+from logging_utils import WebScrapeLogger
 
 def submit_address_search(driver: WebDriver, address: str):
     """

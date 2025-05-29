@@ -3,7 +3,7 @@ from selenium.webdriver.common.by import By
 import urllib, time, os, re
 from .GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, wait_for_page, click_element
 from selenium.webdriver.common.action_chains import ActionChains
-from LoggingUtils import WebScrapeLogger
+from logging_utils import WebScrapeLogger
 from .PhotoScraper import scrape_photo_page
 
 def parse_record_card(table: WebDriver) -> dict:

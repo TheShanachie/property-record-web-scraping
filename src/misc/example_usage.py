@@ -1,7 +1,7 @@
-from LoggingUtils import WebScrapeLogger
-from ScraperUtils import Driver, submit_address_search
-from ScraperUtils.RecordScraper import parse_record_tables, go_to_record_page, get_record_heading, get_listing_index, next_record
-from ScraperUtils.Driver import Driver
+from logging_utils import WebScrapeLogger
+from scraper_utils import Driver, submit_address_search
+from scraper_utils.RecordScraper import parse_record_tables, go_to_record_page, get_record_heading, get_listing_index, next_record
+from scraper_utils.Driver import Driver
 
 
 def scenario_1():
