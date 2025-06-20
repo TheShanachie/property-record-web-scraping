@@ -1,0 +1,22 @@
+{
+    "$id": "api_schema/output/tasks.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "tasks",
+    "type": "object",
+    "properties": {
+        "tasks": {
+            "type": "object",
+            "patternProperties": {
+                "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$": {
+                    "$ref": "api_schema/output/task.json"
+                }
+            },
+            "additionalProperties": false
+        },
+        "count": {
+            "type": "number"
+        },
+        "additionalProperties": false
+    },
+    "required": ["count", "tasks"]
+}

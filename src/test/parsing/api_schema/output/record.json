@@ -1,0 +1,19 @@
+{
+    "$id": "api_schema/output/record.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "record",
+    "type": "object",
+    "properties": {
+        "heading": { "$ref": "api_schema/output/record_pages/heading.json" },
+        "Owner": { "$ref": "api_schema/output/record_pages/owner.json" },
+        "Commercial": { "$ref": "api_schema/output/record_pages/commercial.json" },
+        "Homestead": { "$ref": "api_schema/output/record_pages/homestead.json" },
+        "Land": { "$ref": "api_schema/output/record_pages/land.json" },
+        "Multi-Owner": { "$ref": "api_schema/output/record_pages/multi_owner.json" },
+        "Parcel": { "$ref": "api_schema/output/record_pages/parcel.json" },
+        "Sales": { "$ref": "api_schema/output/record_pages/sales.json" },
+        "Values": { "$ref": "api_schema/output/record_pages/values.json" },
+        "Residential": { "$ref": "api_schema/output/record_pages/residential.json" }
+    },
+    "required": ["heading"]
+}

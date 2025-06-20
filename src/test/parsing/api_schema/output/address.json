@@ -1,0 +1,26 @@
+{
+    "$id": "api_schema/output/address.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "address_input",
+    "type": "object",
+    "properties": {
+        "address": {
+            "type": "array",
+            "prefixItems": [
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "string"
+                }
+            ],
+            "unevaluatedItems": false,
+            "additionalProperties": false,
+            "minItems": 3,  
+            "maxItems": 3
+        }
+    }
+}
