@@ -20,12 +20,6 @@
                     },
                     "Old Owner": {
                         "type": "string"
-                    },
-                    "...": {
-                        "type": "string"
-                    },
-                    "...": {
-                        "type": "string"
                     }
                 }
             }

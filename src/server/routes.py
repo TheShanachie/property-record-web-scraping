@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from typing import Callable, Tuple, Any, Dict, Optional, List
-from .thread_pool_manager import WebScrapingThreadPool, TaskData
+from .thread_pool import WebScrapingThreadPool, TaskData
 from .driver_pool import DriverPool
 import time, uuid, traceback
 from dataclass import dataclass, field

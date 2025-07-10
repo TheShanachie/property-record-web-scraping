@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import Optional, List
 from uuid import uuid4
 from enum import Enum
@@ -6,11 +6,22 @@ from datetime import datetime
 
 class Status(str, Enum):
     """Enumeration for task status"""
+    CREATED = "created"
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    
+class TaskType(str, Enum):
+    """Enumeration for task type"""
+    SCRAPE = "scrape"
+    CANCEL = "cancel"
+    STATUS = "status"
+    RESULT = "result"
+    WAIT = "wait"
+    TASKS = "tasks"
+    HEALTH = "health"
 
 class Metadata(BaseModel):
     """Metadata for a task, including status and timestamps."""
@@ -18,13 +29,19 @@ class Metadata(BaseModel):
     # General Information
     id: str = Field(default_factory=lambda: uuid4().hex)
     
+    # Task Type
+    task_type: TaskType = Field(..., description="Type of the task (e.g., 'scrape', 'cancel', 'status', 'result', 'wait', 'tasks', 'health')")
+    
     # Timestamp Data
     created_at: str = Field(default_factory=lambda: datetime.now(), description="Creation timestamp")
     finished_at: Optional[str] = Field(None, description="Completion timestamp")
     
     # Status Data
-    status: Status = Field(..., description="Current status of the task (e.g., 'pending', 'running', 'completed', 'failed')")
+    status: Status = Field(..., description="Current status of the task (e.g., 'pending', 'running', 'completed', 'failed', 'cancelled')")
     status_code: int = Field(200, description='HTTP status code representing the task status')
+    
+    # Input Data
+    input_data: Optional[dict] = Field(None, description="Input data for a task.")
     
     # Error Data
     error_message: Optional[str] = Field(None, description="Error message if the task failed")
