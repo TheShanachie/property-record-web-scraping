@@ -73,7 +73,7 @@ class TaskManager:
                 return list(self._tasks.values())
             return [task for task in self._tasks.values() if task.status in statuses]
 
-    def _cleanup_completed_tasks(self):
+   def _cleanup_completed_tasks(self):
         """Background thread to cleanup old completed tasks"""
         while not self._shutdown:
             try:
@@ -97,15 +97,15 @@ class TaskManager:
             except Exception as e:
                 print(f"Cleanup thread error: {e}")
                 
-    def _execute_task(self, task_id: str, func: Callable, args: Tuple, kwargs: Dict):
+    def _execute_task(self, task_id: str, func: Callable, args: Tuple = (), kwargs: Dict = {}):
         """Internal method to execute task and update status"""
         try:
             with self._lock:
                 if task_id in self.tasks:
                     self.tasks[task_id].status = Status.RUNNING
                     self.tasks[task_id].started_at = datetime.now()
-
-            # Execute the function with argument
+            
+            # Execute the function with arguments
             result = func(*args, **kwargs)
 
             with self._lock:
@@ -122,10 +122,10 @@ class TaskManager:
                     self.tasks[task_id].finished_at = datetime.now()
 
     # This is our worker function...
-    def scrape_address(self, address: tuple, pages: list, num_results: int):
+    def scrape_address(self, task_id: str, address: tuple, pages: list, num_results: int):
         """Worker function to scrape address from property site."""
         with self._lock:
-            driver = self._driver_pool.acquire_driver()
+            driver = self._driver_pool.borrow_driver(task_id=, thread_id=)
 
         # Scrape for the results, hoping there is not error. (TODO: This behavior is inconsistent.)
         results = driver.address_search(address, pages, num_results)
@@ -133,7 +133,7 @@ class TaskManager:
         driver.reset()
 
         with self._lock:
-            self._driver_pool.release_driver(driver=driver)
+            self._driver_pool.return_driver(task_id=, thread_id=, driver=driver)
 
         # Return the results.
         return results
@@ -142,7 +142,7 @@ class TaskManager:
                          address: Tuple[int, str, str],
                          pages: List[str],
                          num_results: int
-                         ) -> None:
+                         ) -> Metadata:
         """
         Create a new scraping task and submit it to the thread pool.
 
@@ -163,6 +163,8 @@ class TaskManager:
         # Update tasks and futures
         with self._lock:
             self._tasks[task_id] = metadata
+            
+        func=
 
         # Submit the task to the thread pool.
         future = self._executer.submit(self._execute_task,
@@ -176,6 +178,8 @@ class TaskManager:
         # Update the futures.
         with self._lock:
             self._futures[task_id] = future
+            
+        # Return the metadata object.
 
     
     
