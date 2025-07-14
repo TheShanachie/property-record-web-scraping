@@ -43,9 +43,6 @@ class Result(OutputModel):
     
     # Metadata about the response
     metadata: Metadata = Field(..., description="Metadata about the task, including status and timestamps")
-    
-    # Actual Data
-    record: Record = Field(..., description="Record containing the scraped data, returned only if the task is completed", default=None)
 
 
 class Wait(OutputModel):
@@ -53,25 +50,16 @@ class Wait(OutputModel):
     
     # Metadata about the response
     metadata: Metadata = Field(..., description="Metadata about the task, including status and timestamps")
-    
-    # Actual Data
-    record: Record = Field(..., description="Record containing the scraped data.", default=None) 
 
 
 class Tasks(OutputModel):
     """Model for tasks input data."""
-    
-    # Metadata about the response
-    metadata: Metadata = Field(..., description="Metadata about the task, including status and timestamps")
 
     # Actual Data -> List of metadata objects for the current tasks.
     tasks: List[Metadata] = Field(..., description="List of metadata objects for the current tasks")
 
 class Health(OutputModel):
     """Model for health input data."""
-    
-    # Metadata about the response
-    metadata: Metadata = Field(..., description="Metadata about the task, including status and timestamps")
     
     # Actual Data
     health: str = Field(..., description="Health status of the service")

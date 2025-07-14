@@ -73,7 +73,7 @@ class TaskManager:
                 return list(self._tasks.values())
             return [task for task in self._tasks.values() if task.status in statuses]
 
-   def _cleanup_completed_tasks(self):
+    def _cleanup_completed_tasks(self):
         """Background thread to cleanup old completed tasks"""
         while not self._shutdown:
             try:
@@ -129,8 +129,6 @@ class TaskManager:
 
         # Scrape for the results, hoping there is not error. (TODO: This behavior is inconsistent.)
         results = driver.address_search(address, pages, num_results)
-        # Currently, we clean up the driver before returning. This behavior needs to change eventually.
-        driver.reset()
 
         with self._lock:
             self._driver_pool.return_driver(task_id=, thread_id=, driver=driver)
@@ -164,27 +162,26 @@ class TaskManager:
         with self._lock:
             self._tasks[task_id] = metadata
             
-        func=
+        # kwargs for the worker function.
+        kwargs = {
+            'task_id': task_id, # Unique task identifier.
+            'func': self.scrape_address, # Function to execute in helper worker function/thread.
+            'args': (address, pages, num_results), # Arguments to pass to the worker function.
+        }
 
-        # Submit the task to the thread pool.
-        future = self._executer.submit(self._execute_task,
-                                       task_id,
-                                       self.scrape_address,
-                                       address,
-                                       pages,
-                                       num_results
-                                       )
-
+        # Submit the task to the thread pool. 
+        # The execute task method will handle the execution and status updates and appropriate states changes and error handling.
+        future = self._executer.submit(fn=self._execute_task, **kwargs)
+        
         # Update the futures.
         with self._lock:
             self._futures[task_id] = future
             
         # Return the metadata object.
+        return metadata
 
-    
-    
 
-    def get_task_result(self, task_id: str) -> Metadata:
+    def get_task_status(self, task_id: str) -> Metadata:
         """ 
         Get the current status and info of a web scraping task.
 
