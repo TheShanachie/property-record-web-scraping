@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from typing import Callable, Tuple, Any, Dict, Optional, List
 from .events import EventsHandler
+from models import ActionInput, ActionOutput, TaskStatus, TaskResult
 import time, uuid, traceback
 
 # Create a Blueprint instead of Flask app
@@ -23,8 +24,18 @@ def get_events_handler():
 @scraping_bp.route('/scrape', methods=['POST'])
 def submit_scraping_task():
     """"""
-    pass
-            
+    try:
+        handler = get_events_handler()
+        data = ActionInput.Scrape(**request.json)
+        result = handler.scrape(data)
+        return result.json_dump()
+        
+    except Exception as e:
+        
+        result = ActionOutput.OutputModel(
+            error=str(e),
+            status_code=400,
+        return jsonify({"error": str(e)}), 400  
 
 
 @scraping_bp.route('/task/<task_id>/status', methods=['GET'])

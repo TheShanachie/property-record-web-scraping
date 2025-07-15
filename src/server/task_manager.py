@@ -19,25 +19,32 @@ class TaskManager:
     """
 
     def __init__(self, max_drivers: int = 5, max_workers: int = 5, cleanup_interval: int = 3600):
-        # Initailize Driver Pool
-        self._max_workers = max_workers
-        self._cleanup_interval = cleanup_interval
-        self._executer = ThreadPoolExecutor(max_workers=max_workers)
-        self._tasks: Dict[str, Metadata] = {}
-        self._futures: Dict[str, Future] = {}
-        self._lock = threading.Lock()
+        
+        try: 
+            # Initailize Driver Pool
+            self._max_workers = max_workers
+            self._cleanup_interval = cleanup_interval
+            self._executer = ThreadPoolExecutor(max_workers=max_workers)
+            self._tasks: Dict[str, Metadata] = {}
+            self._futures: Dict[str, Future] = {}
+            self._lock = threading.Lock()
 
-        # Start the cleanup thread
-        self._shutdown = False
-        self._cleanup_thread = threading.Thread(
-            target=self._cleanup_interval,
-            daemon=True
-        )
-        self._cleanup_thread.start()
+            # Start the cleanup thread
+            self._shutdown = False
+            self._cleanup_thread = threading.Thread(
+                target=self._cleanup_interval,
+                daemon=True
+            )
+            self._cleanup_thread.start()
 
-        # Create the driver pool
-        self._max_drivers = max_drivers
-        self._driver_pool = DriverPool(max_drivers=max_drivers)
+            # Create the driver pool
+            self._max_drivers = max_drivers
+            self._driver_pool = DriverPool(max_drivers=max_drivers)
+            
+        except Exception as e:
+            
+            # Simply raise the error to the next scope.
+            raise RuntimeError(f"Failed to initialize TaskManager: {e}")
 
     def _task_exists(self, task_id: str) -> bool:
         """ Check if a task exists """
@@ -58,7 +65,7 @@ class TaskManager:
             else:
                 raise TaskNotFoundError(task_id=task_id)
             
-    def _get_all_tasks(self, statuses: Set[Status] = None) -> List[Metadata]:
+    def get_all_tasks(self, statuses: Set[Status] = None) -> List[Metadata]:
         """
         Get a list of all tasks.
 
@@ -73,8 +80,8 @@ class TaskManager:
                 return list(self._tasks.values())
             return [task for task in self._tasks.values() if task.status in statuses]
 
-    def _cleanup_completed_tasks(self):
-        """Background thread to cleanup old completed tasks"""
+    def _cleanup_completed_tasks(self) -> None:
+        """ Background thread to cleanup old completed tasks """
         while not self._shutdown:
             try:
                 time.sleep(self.cleanup_interval)
@@ -95,10 +102,12 @@ class TaskManager:
                         self.futures.pop(task_id, None)
                         
             except Exception as e:
-                print(f"Cleanup thread error: {e}")
                 
-    def _execute_task(self, task_id: str, func: Callable, args: Tuple = (), kwargs: Dict = {}):
-        """Internal method to execute task and update status"""
+                # Simply raise the error to the next scope.
+                raise RuntimeError(f"Error during cleanup: {e}")
+                
+    def _execute_task(self, task_id: str, func: Callable, args: Tuple = (), kwargs: Dict = {}) -> None:
+        """ Internal method to execute task and update status """
         try:
             with self._lock:
                 if task_id in self.tasks:
@@ -119,22 +128,46 @@ class TaskManager:
                 if task_id in self.tasks:
                     self.tasks[task_id].status = Status.FAILED
                     self.tasks[task_id].error = str(e)
+                    self.tasks[task_id].result = result
                     self.tasks[task_id].finished_at = datetime.now()
 
     # This is our worker function...
-    def scrape_address(self, task_id: str, address: tuple, pages: list, num_results: int):
-        """Worker function to scrape address from property site."""
-        with self._lock:
-            driver = self._driver_pool.borrow_driver(task_id=, thread_id=)
+    def scrape_address(self, task_id: str, address: tuple, pages: list, num_results: int) -> Union[List[Dict], None]:
+        """ 
+        Worker function to scrape address from property site. In all cases, 
+        whether the task succeeds or fails, this method will ensure that the 
+        driver is returned to the pool. 
+        """
+        
+        try:
+            # Get the id of the thread that is executing this task.
+            thread_id = threading.get_ident()
+            
+            # check out a driver from the pool.
+            with self._lock:
+                driver = self._driver_pool.borrow_driver(task_id=task_id, thread_id=thread_id)
 
-        # Scrape for the results, hoping there is not error. (TODO: This behavior is inconsistent.)
-        results = driver.address_search(address, pages, num_results)
+            # Scrape for the results, hoping there is not error. (TODO: This behavior is inconsistent.)
+            results = driver.address_search(address, pages, num_results)
 
-        with self._lock:
-            self._driver_pool.return_driver(task_id=, thread_id=, driver=driver)
+            with self._lock:
+                self._driver_pool.return_driver(task_id=task_id, thread_id=thread_id)
 
-        # Return the results.
-        return results
+            # Return the results.
+            return results
+        
+        except Exception as e:
+            with self._lock:
+                
+                # Return the driver to the pool if there is an error, if there is a driver that is checked out.
+                self._driver_pool.return_driver(task_id=task_id, thread_id=thread_id, raise_error=False)
+                
+                # If there is an error, we need to return the driver to the pool.
+                if task_id in self._tasks:
+                    self._tasks[task_id].status = Status.FAILED
+                    self._tasks[task_id].error = str(e)
+                    self.tasks[task_id].result = results
+                    self._tasks[task_id].finished_at = datetime.now()
 
     def post_scrape_task(self,
                          address: Tuple[int, str, str],
@@ -143,45 +176,60 @@ class TaskManager:
                          ) -> Metadata:
         """
         Create a new scraping task and submit it to the thread pool.
-
+        This method is needlessly complicated, but it allows to keep
+        track of certain metadata and state changes.
+        
         Args:
             address: Tuple containing number, street, and city.
             pages: List of pages to scrape.
             num_results: Number of results to return from the scrape (1-10).
         """
-
-        # Init new task
-        metadata = Metadata(
-            address=address,
-            pages=pages,
-            num_results=num_results
-        )
-        task_id = metadata.id
-
-        # Update tasks and futures
-        with self._lock:
-            self._tasks[task_id] = metadata
-            
-        # kwargs for the worker function.
-        kwargs = {
-            'task_id': task_id, # Unique task identifier.
-            'func': self.scrape_address, # Function to execute in helper worker function/thread.
-            'args': (address, pages, num_results), # Arguments to pass to the worker function.
-        }
-
-        # Submit the task to the thread pool. 
-        # The execute task method will handle the execution and status updates and appropriate states changes and error handling.
-        future = self._executer.submit(fn=self._execute_task, **kwargs)
         
-        # Update the futures.
-        with self._lock:
-            self._futures[task_id] = future
+        try:
+
+            # Init new task
+            metadata = Metadata(
+                address=address,
+                pages=pages,
+                num_results=num_results
+            )
+            task_id = metadata.id
+
+            # Update tasks and futures
+            with self._lock:
+                self._tasks[task_id] = metadata
+                
+            # kwargs for the worker function.
+            kwargs = {
+                'task_id': task_id, # Unique task identifier.
+                'func': self.scrape_address, # Function to execute in helper worker function/thread.
+                'args': (address, pages, num_results), # Arguments to pass to the worker function.
+            }
+
+            # Submit the task to the thread pool. 
+            # The execute task method will handle the execution and status updates and appropriate states changes and error handling.
+            future = self._executer.submit(fn=self._execute_task, **kwargs)
             
-        # Return the metadata object.
-        return metadata
+            # Update the futures.
+            with self._lock:
+                self._futures[task_id] = future
+                
+            # Return the metadata object.
+            return metadata
+        
+        except Exception as e:
+            
+            # If a task id is created at this point, get it.
+            if 'task_id' in locals():
+                with self._lock:
+                    self._tasks.pop(task_id, None)
+                    self._futures.pop(task_id, None)
+                    
+            # Raise the error to the next scope.
+            raise RuntimeError(f"Failed to post scrape task: {e}")
 
 
-    def get_task_status(self, task_id: str) -> Metadata:
+    def get_task_status(self, task_id: str) -> Metadata | None:
         """ 
         Get the current status and info of a web scraping task.
 
@@ -191,13 +239,14 @@ class TaskManager:
         Returns:
             Metadata object with details.
         """
+    
         with self._lock:
             task_result = self._tasks.get(task_id)
             if task_result:
                 return task_result
         return None
 
-    def get_task_result(self, task_id: str) -> Metadata:
+    def get_task_result(self, task_id: str) -> Metadata | None:
         """ 
         Get the result of a completed task.
 
@@ -213,7 +262,7 @@ class TaskManager:
                 return task_result
         return None
 
-    def wait_for_task(self, task_id: str, timeout: Optional[float] = None) -> Metadata:
+    def wait_for_task(self, task_id: str, timeout: float = 60) -> Metadata | None:
         """
         Wait for a task to complete and return its status.
 
@@ -224,6 +273,7 @@ class TaskManager:
         Returns:
             Metadata object with final task status or None if timeout/not found
         """
+        
         future = self.futures.get(task_id)
         if not future:
             return None

@@ -15,7 +15,7 @@ class DriverPool:
             self.pool.put(self._create_driver())
 
     def _create_driver(self):
-        """Create a new Selenium WebDriver instance."""
+        """ Create a new Selenium WebDriver instance. """
         driver = Driver()
         return driver
     
@@ -69,25 +69,38 @@ class DriverPool:
             return driver
         
 
-    def return_driver(self, task_id: str, thread_id: str, driver: Driver) -> None:
+    def return_driver(self, task_id: str, thread_id: str, raise_error: bool = False) -> None:
         """ Return a driver to the pool. """
         
-        # Reset the driver.
+        # Get the driver from the active drivers mapping and remove it.
+        with self.lock:
+            key = (task_id, thread_id)
+            driver = self.active_drivers.pop(key, None)
+            
+        # Reset the driver if it exists, and put it back in the pool.
         # TODO: This severely impacts performance. This behavior should be improved.
         driver.reset()
-                
-        if driver:
+             
+        # Raise an error if the driver does not exist with the given key.
+        if not driver:
+            if raise_error:
+                raise RuntimeError(f"No active driver found for task_id: {task_id} and thread_id: {thread_id}")
+            else:
+                return
+        
+        # Otherise, put the driver back in the pool.
+        try:
+            # Attempt to put the driver back in the pool.
             with self.lock:
-                
-                try:
-                    # Remove from active drivers
-                    self.active_drivers.pop(key=(task_id, thread_id))
-                    
-                    # Put the driver back
-                    self.pool.put(driver, block=False)
-                    
-                except queue.Full:
-                    driver.destroy()  # Cleanup if the pool is full
+                self.pool.put(driver, block=False)
+        
+        except queue.Full:
+            # If the pool is full, destroy the driver.
+            driver.destroy()
+            
+            # Raise an error to indicate that the driver could not be returned.
+            if raise_error:
+                raise RuntimeError(f"Driver pool is full. Driver for task_id: {task_id} and thread_id: {thread_id} has been destroyed.")
 
 
     def kill_driver(self, task_id: str, thread_id: str):
