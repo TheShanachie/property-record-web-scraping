@@ -30,7 +30,7 @@ def get_events_handler():
 
 
 @scraping_bp.route('/scrape', methods=['POST'])
-def submit_scraping_task():
+def scrape():
     """
         This function handles the submission of a scraping task. It validates the input data, extracts the necessary parameters, and posts the task to the TaskManager. If successful, it returns the metadata of the task. If there is a validation error, it returns a 400 status code with the error message. If there is any other error, it returns a 500 status code with the error message
 
@@ -62,7 +62,7 @@ def submit_scraping_task():
 
 
 @scraping_bp.route('/task/<task_id>/status', methods=['GET'])
-def get_task_status(task_id):
+def status(task_id):
     """
         This function retrieves the status of a specific task by its ID. It uses the EventsHandler to get the current status of the task and returns it as a JSON response. This function returns all available metadata for a test, regardless of the status.
     
@@ -92,7 +92,7 @@ def get_task_status(task_id):
 
 
 @scraping_bp.route('/task/<task_id>/result', methods=['GET'])
-def get_task_result(task_id):
+def result(task_id):
     """
         This function retrieves the result of a specific task by its ID. It uses the EventsHandler to get the result of the task and returns it as a JSON response. If the task is still running, it will return an empty result.
     
@@ -122,7 +122,7 @@ def get_task_result(task_id):
 
 
 @scraping_bp.route('/task/<task_id>/wait', methods=['GET'])
-def wait_for_task(task_id):
+def wait(task_id):
     """
         This function waits for a specific task to complete by its ID. It uses the EventsHandler to wait for the task to finish and returns the result as a JSON response. If the task is still running, it will block until the task is completed. The function currently does not accept a timeout argument, but is set to wait 60 seconds via the default behavior of the EventsHandler.
     
@@ -153,7 +153,7 @@ def wait_for_task(task_id):
 
 
 @scraping_bp.route('/task/<task_id>/cancel', methods=['POST'])
-def cancel_task(task_id):
+def cancel(task_id):
     """ 
         This function is currently not implemented. It is a placeholder for future functionality. 
     
@@ -171,7 +171,7 @@ def cancel_task(task_id):
 
 
 @scraping_bp.route('/tasks', methods=['GET'])
-def get_all_tasks():
+def tasks():
     """
         This function retrieves all tasks from the TaskManager. It uses the EventsHandler to get the list of all tasks and returns them as a JSON response.
         
@@ -199,7 +199,7 @@ def get_all_tasks():
 
 
 @scraping_bp.route('/health', methods=['GET'])
-def health_check():
+def health():
     """
         This function performs a health check on the TaskManager. It uses the EventsHandler to check the health status and returns it as a JSON response.
         
@@ -212,7 +212,7 @@ def health_check():
         handler = get_events_handler()
 
         # Perform a health check on the TaskManager
-        health_status = handler.health_check()
+        health_status = handler.health()
 
         # Return the health status as a JSON response
         return health_status.json_dump()
