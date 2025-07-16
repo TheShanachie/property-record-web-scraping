@@ -3,7 +3,11 @@ from typing import Optional, List, Tuple
 from uuid import uuid4
 from enum import Enum
 from datetime import datetime
+<<<<<<< HEAD
 from .Record import Record
+=======
+from models import Record
+>>>>>>> origin/main
 
 class Status(str, Enum):
     """Enumeration for task status"""
@@ -44,7 +48,11 @@ class Metadata(BaseModel):
     num_results: int = Field(..., description="Number of results to return from the scrape", ge=1, le=10)
     
     # Result
+<<<<<<< HEAD
     result: Record = Field(None, description="The result data from a webscraping job.")
+=======
+    result: Record = Field(None, "The result data from a webscraping job.")
+>>>>>>> origin/main
     
     # Error Data
     error_message: Optional[str] = Field(None, description="Error message if the task failed")

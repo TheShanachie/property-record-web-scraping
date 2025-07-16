@@ -73,7 +73,6 @@ class TaskManager:
                 return task.status
             else:
                 raise TaskNotFoundError(task_id=task_id)
-
     def get_all_tasks(self, statuses: Set[Status] = None) -> List[Metadata]:
         """
         Get a list of all tasks.
@@ -125,7 +124,6 @@ class TaskManager:
                 if task_id in self.tasks:
                     self.tasks[task_id].status = Status.RUNNING
                     self.tasks[task_id].started_at = datetime.now()
-
             # Execute the function with arguments
             result = func(*args, **kwargs)
 
@@ -195,13 +193,11 @@ class TaskManager:
         Create a new scraping task and submit it to the thread pool.
         This method is needlessly complicated, but it allows to keep
         track of certain metadata and state changes.
-
         Args:
             address: Tuple containing number, street, and city.
             pages: List of pages to scrape.
             num_results: Number of results to return from the scrape (1-10).
         """
-
         try:
 
             # Init new task
@@ -257,7 +253,6 @@ class TaskManager:
         Returns:
             Metadata object with details.
         """
-
         with self._lock:
             task_result = self._tasks.get(task_id)
             if task_result:
@@ -292,7 +287,6 @@ class TaskManager:
         Returns:
             Metadata object with final task status or None if timeout/not found
         """
-
         future = self.futures.get(task_id)
         if not future:
             return None
