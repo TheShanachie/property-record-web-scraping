@@ -35,11 +35,6 @@ class TestSubmitTaskEndpoint(unittest.TestCase):
         }
         If the shape is not correct, a ValueError should be raised.
         """
-        print(self._submit_task({
-            "address": (101, "Main St", ""),
-            "pages": [],
-            "max_results": 1
-        }))
         
         # Extra fields
         self.assertEqual(self._submit_task({
