@@ -1,0 +1,36 @@
+{
+    "$id": "api_schema/output/health.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "tasks",
+    "type": "object",
+    "properties": {
+        "active_tasks": {
+            "type": "number"
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "healthy",
+                "unhealthy"
+            ]
+        },
+        "thread_pool": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "timestamp": {
+            "type": "number",
+            "description": "Unix timestamp in seconds since 1970-01-01T00:00:00Z"
+        },
+        "error": {
+            "type": "string"
+        },
+        "additionalProperties": false
+    },
+    "required": [
+        "status",
+        "timestamp"
+    ]
+}

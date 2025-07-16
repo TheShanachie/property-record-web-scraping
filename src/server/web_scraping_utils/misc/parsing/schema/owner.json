@@ -1,0 +1,60 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Owner",
+    "type": "object",
+    "properties": {
+        "Current Owner Details": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Name(s)": {
+                        "type": "string"
+                    },
+                    "In Care of": {
+                        "type": "string"
+                    },
+                    "Mailing Address": {
+                        "type": "string"
+                    },
+                    "City, State, Zip Code": {
+                        "type": "string"
+                    },
+                    "Book": {
+                        "type": "string"
+                    },
+                    "Page": {
+                        "type": "string"
+                    }
+                    
+                }
+            }
+        },
+        "Owner History\n  ": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Current Owner": {
+                        "type": "string"
+                    },
+                    "Previous Owner": {
+                        "type": "string"
+                    },
+                    "Sale Date": {
+                        "type": "string"
+                    },
+                    "Price": {
+                        "type": "string"
+                    },
+                    "Book": {
+                        "type": "string"
+                    },
+                    "Page": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

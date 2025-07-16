@@ -1,0 +1,20 @@
+{
+    "$id": "api_schema/output/record_pages/heading.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title:": "heading",
+    "type": "object",
+    "properties": {
+        "PARID": {
+            "type": "string",
+            "description": "Presumably unique identifier for a property/parcel record."
+        },
+        "Owner": {
+            "type": "string",
+            "description": "Name of the owner of the property."
+        },
+        "Address": {
+            "type": "string",
+            "description": "Physical address of the property."
+        }
+    }   
+}

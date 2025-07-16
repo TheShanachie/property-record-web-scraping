@@ -1,0 +1,62 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Sales",
+    "type": "object",
+    "properties": {
+        "Sales\n  ": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Date Recorded": {
+                        "type": "string"
+                    },
+                    "New Owner": {
+                        "type": "string"
+                    },
+                    "Sale Price": {
+                        "type": "string"
+                    },
+                    "Old Owner": {
+                        "type": "string"
+                    },
+                    "...": {
+                        "type": "string"
+                    },
+                    "...": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "Sales Detail\n  ": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Sale Date": {
+                        "type": "string"
+                    },
+                    "Sale Price": {
+                        "type": "string"
+                    },
+                    "New Owner": {
+                        "type": "string"
+                    },
+                    "Previous Owner": {
+                        "type": "string"
+                    },
+                    "Recorded Date": {
+                        "type": "string"
+                    },
+                    "Deed Book": {
+                        "type": "string"
+                    },
+                    "Deed Page": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

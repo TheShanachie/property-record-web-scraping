@@ -1,0 +1,11 @@
+# Ignore all bin directories & src directories
+bin/
+src/
+
+# Ignore all extra logging files
+*.log
+*.html
+*.xml
+
+# Ignore the config file.
+*.yaml

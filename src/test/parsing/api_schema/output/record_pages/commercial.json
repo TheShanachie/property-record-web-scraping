@@ -1,0 +1,22 @@
+{
+    "$id": "api_schema/output/record_pages/commercial.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "...",
+    "type": "object",
+    "properties": {
+        "...": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "...": {
+                        "type": "string"
+                    },
+                    "...": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
