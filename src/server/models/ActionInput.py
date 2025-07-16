@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 from .Metadata import Metadata
-=======
-from Metadata import Metadata
->>>>>>> origin/main
 from typing import Optional, List, Dict, Tuple
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from uuid import uuid4

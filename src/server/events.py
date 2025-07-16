@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from .models import ActionInput, ActionOutput
 from .task_manager import TaskManager
 from pydantic import validate_call
@@ -16,22 +15,6 @@ class EventsHandler():
             that were initialized in the constructor.
         """
         self._task_manager.shutdown()
-=======
-from typing_extensions import TypedDict, Unpack
-from driver_pool import DriverPool
-from thread_pool import WebScrapingThreadPool 
-from models import ActionInput, ActionOutput
-from models.Metadata import Metadata, TaskType, Status
-from pydantic import validate_call
-from task_manager import TaskManager
-
-class EventsHandler():
-    def __init__(self):
-        # Initialize any necessary resources or configurations here
-        self._task_manager = TaskManager(max_drivers=5, 
-                                         max_workers=5, 
-                                         cleanup_interval=3600)
->>>>>>> origin/main
 
     @validate_call
     def health(self) -> ActionOutput.Health:

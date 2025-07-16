@@ -1,19 +1,12 @@
 from flask import Flask
-<<<<<<< HEAD
 from server.routes import init_events_handler, scraping_bp
 import atexit, os
-=======
-from server.routes import init_thread_pool, init_driver_pool, scraping_bp
-import atexit
-import os
->>>>>>> origin/main
 
 def create_app():
     """Application factory pattern"""
     app = Flask(__name__)
     
     # Configuration
-<<<<<<< HEAD
     app.config['MAX_DRIVERS'] = int(os.getenv('MAX_DRIVERS', 5))
     app.config['MAX_WORKERS'] = int(os.getenv('MAX_WORKERS', 5))
     app.config['CLEANUP_INTERVAL'] = int(os.getenv('CLEANUP_INTERVAL', 3600))
@@ -28,26 +21,6 @@ def create_app():
     
     # Register cleanup on app shutdown
     atexit.register(lambda: events_handler.shutdown())
-=======
-    app.config['MAX_WORKERS'] = int(os.getenv('MAX_WORKERS', 10))
-    app.config['CLEANUP_INTERVAL'] = int(os.getenv('CLEANUP_INTERVAL', 1800))  # 30 minutes
-    app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    # Initialize thread pool
-    thread_pool = init_thread_pool(
-        max_workers=app.config['MAX_WORKERS'],
-        cleanup_interval=app.config['CLEANUP_INTERVAL']
-    )
-    print("Thread pool initialized.")
-    
-    # Initialize driver pool
-    driver_pool = init_driver_pool(max_drivers=5)
-    print("Driver pool initialized.")
-    
-    # Register cleanup on app shutdown
-    atexit.register(lambda: thread_pool.shutdown())
-    atexit.register(lambda: driver_pool.shutdown())
->>>>>>> origin/main
     
     # Register blueprints
     app.register_blueprint(scraping_bp, url_prefix='/api/v1')
