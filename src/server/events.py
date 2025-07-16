@@ -23,7 +23,7 @@ class EventsHandler():
             
             # TODO: There are so many things we can do here to improve visibility.
         """
-        return ActionOutput.Health(status="healthy", error=None, status_code=200)
+        return ActionOutput.Health(health="healthy", error=None, status_code=200)
 
     @validate_call
     def tasks(self) -> ActionOutput.Tasks:
