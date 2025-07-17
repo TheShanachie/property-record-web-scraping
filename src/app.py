@@ -7,10 +7,9 @@ def create_app():
     app = Flask(__name__)
     
     # Configuration
-    app.config['MAX_DRIVERS'] = int(os.getenv('MAX_DRIVERS', 5))
+    app.config['MAX_DRIVERS'] = int(os.getenv('MAX_DRIVERS', 1))
     app.config['MAX_WORKERS'] = int(os.getenv('MAX_WORKERS', 5))
     app.config['CLEANUP_INTERVAL'] = int(os.getenv('CLEANUP_INTERVAL', 3600))
-    app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     
     # Initialize events handler.
     events_handler = init_events_handler(
@@ -53,7 +52,7 @@ app = create_app()
 
 if __name__ == '__main__':
     app.run(
-        debug=app.config['DEBUG'],
+        debug=False,
         host='0.0.0.0',
         port=int(os.getenv('PORT', 5000)),
         threaded=True

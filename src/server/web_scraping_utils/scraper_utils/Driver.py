@@ -98,6 +98,27 @@ class Driver:
         # Success message
         WebScrapeLogger.info(msg=f"Driver instance initialized with id - {self.id}")
         
+    def health(self) -> dict:
+        """
+        Checks the health of the driver instance.
+        Returns:
+            dict: A dictionary containing the status of the driver instance.
+        """
+        try:
+            # Check if the driver is still alive
+            if self.driver.service.is_connectable():
+                return {"status": "healthy",
+                        "id": self.id,
+                        "url": self.driver.current_url,
+                        "title": self.driver.title,
+                        }
+            else:
+                return {"status": "unhealthy", "id": self.id}
+        except Exception as e:
+            # Log the error
+            WebScrapeLogger.error(msg=f"Error checking health of driver instance {self.id}")
+            return {"status": "error", "id": self.id, "error": str(e)}
+        
             
    
     def apply(self, func: Callable, args: dict = None, log: bool = False):

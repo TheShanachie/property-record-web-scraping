@@ -1,12 +1,13 @@
 from .Metadata import Metadata
+from .SafeErrorMixin import SafeErrorMixin
 from .Record import Record
-from typing import Optional, List, Dict, Tuple, Any
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from typing import Optional, List, Dict, Tuple, Any, Union
+from pydantic import BaseModel, Field, ConfigDict, field_validator, field_serializer
 from uuid import uuid4
 from enum import Enum
 
     
-class OutputModel(BaseModel):
+class OutputModel(SafeErrorMixin, BaseModel):
     """
     Base model for output data.
     This class is used to define the common fields and validation logic for all output models.
@@ -14,14 +15,17 @@ class OutputModel(BaseModel):
     
     # Model Config
     model_config = ConfigDict(
-        extra='forbid',  # Forbid extra fields not defined in the model
+        # extra='forbid',  # Forbid extra fields not defined in the model
         validate_assignment=True,  # Validate assignments to fields
         arbitrary_types_allowed=True,  # Allow arbitrary types
     )
     
     # Error Data
-    error: Optional[str] = Field(None, description="Error message if any error occurred during processing of the request")
+    error_message: Optional[str] = Field(None, description="Error message if any error occurred during processing of the request")
     status_code: Optional[int] = Field(None, description="HTTP status code for the response, e.g., 200 for success, 400 for bad request, etc.")
+    
+    # Extra
+    extra: Optional[Dict[str, Any]] = Field(None, description="Any extra data that might be needed for the response")
     
     # to json flask response
     def json_dump(self) -> Dict[str, Any]:

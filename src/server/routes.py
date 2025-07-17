@@ -3,9 +3,7 @@ from typing import Callable, Tuple, Any, Dict, Optional, List
 from pydantic import ValidationError
 from .events import EventsHandler
 from .models import ActionInput, ActionOutput
-import time
-import uuid
-import traceback
+import time, json, uuid, traceback
 
 # Create a Blueprint instead of Flask app
 scraping_bp = Blueprint('scraping', __name__)
@@ -39,23 +37,26 @@ def scrape():
     """
     try:
         handler = get_events_handler()
-        ActionInput.Scrape.validate_python(request.json)
+        ActionInput.Scrape.model_validate(request.json)  # Validate the input data
         data = ActionInput.Scrape(**request.json)
+        ActionInput.Scrape.model_validate(data)  # Validate the input data
         result = handler.scrape(data)
         return result.json_dump()
 
     except ValidationError as ve:
+    
         # There was some validation error in the input data
         result = ActionOutput.OutputModel(
-            error=str(ve),
+            error=ve,
             status_code=400, # Bad Request
         )
         return result.json_dump()
 
     except Exception as e:
+        
         # Some other error occurred
         result = ActionOutput.OutputModel(
-            error=str(e),
+            error=e,
             status_code=500, # Internal Server Error
         )
         return result.json_dump()
@@ -77,7 +78,6 @@ def status(task_id):
 
         # Retrieve the task status from the TaskManager
         status = handler.status(ActionInput.Status(task_id=task_id))
-
         # Return the status as a JSON response
         return status.json_dump()
 
@@ -85,7 +85,7 @@ def status(task_id):
         
         # Handle any exceptions that occur
         result = ActionOutput.OutputModel(
-            error=str(e),
+            error=e,
             status_code=500, # Internal Server Error
         )
         return result.json_dump()
@@ -115,7 +115,7 @@ def result(task_id):
         
         # Handle any exceptions that occur
         result = ActionOutput.OutputModel(
-            error=str(e),
+            error=e,
             status_code=500, # Internal Server Error
         )
         return result.json_dump()
@@ -146,7 +146,7 @@ def wait(task_id):
         
         # Handle any exceptions that occur
         result = ActionOutput.OutputModel(
-            error=str(e),
+            error=e,
             status_code=500, # Internal Server Error
         )
         return result.json_dump()
@@ -164,7 +164,6 @@ def cancel(task_id):
     """
     
     result = ActionOutput.OutputModel(
-        error="This function is not implemented yet.",
         status_code=501,  # Not Implemented
     )
     return result.json_dump()
@@ -183,7 +182,7 @@ def tasks():
         handler = get_events_handler()
 
         # Retrieve all tasks from the TaskManager
-        tasks = handler.tasks()
+        tasks = handler.get_all_tasks()
 
         # Return the tasks as a JSON response
         return tasks.json_dump()
@@ -192,7 +191,7 @@ def tasks():
 
         # Handle any exceptions that occur
         result = ActionOutput.OutputModel(
-            error=str(e),
+            error=e,
             status_code=500, # Internal Server Error
         )
         return result.json_dump()
@@ -221,7 +220,7 @@ def health():
         
         # Handle any exceptions that occur
         result = ActionOutput.OutputModel(
-            error=str(e),
+            error=e,
             status_code=500,  # Internal Server Error
         )
         return result.json_dump()

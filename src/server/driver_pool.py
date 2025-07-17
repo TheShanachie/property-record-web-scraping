@@ -17,6 +17,7 @@ class DriverPool:
     def _create_driver(self):
         """ Create a new Selenium WebDriver instance. """
         driver = Driver()
+        # print(driver.health())
         return driver
     
     def _available_driver_exists(self) -> bool:
@@ -76,10 +77,6 @@ class DriverPool:
         with self.lock:
             key = (task_id, thread_id)
             driver = self.active_drivers.pop(key, None)
-            
-        # Reset the driver if it exists, and put it back in the pool.
-        # TODO: This severely impacts performance. This behavior should be improved.
-        driver.reset()
              
         # Raise an error if the driver does not exist with the given key.
         if not driver:
@@ -87,6 +84,10 @@ class DriverPool:
                 raise RuntimeError(f"No active driver found for task_id: {task_id} and thread_id: {thread_id}")
             else:
                 return
+            
+        # Reset the driver if it exists, and put it back in the pool.
+        # TODO: This severely impacts performance. This behavior should be improved.
+        driver.reset()
         
         # Otherise, put the driver back in the pool.
         try:

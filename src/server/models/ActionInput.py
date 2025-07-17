@@ -19,13 +19,13 @@ class Scrape(InputModel):
     """Model for scrape input data."""
     address: Tuple[int, str, str] = Field(..., description="Tuple containing number, street, and city")
     pages: List[str] = Field(..., description="List of pages to scrape")
-    num_results: int = Field(..., description="Number of results to return from the scrape", ge=1, le=10)
+    num_results: int = Field(..., alias="max_results", description="Number of results to return from the scrape", ge=1, le=10)
     
     @field_validator('pages', mode='after')
     @classmethod
     def validate_pages(cls, v):
         possible_pages = ["Parcel", "Owner", "Multi-Owner", "Residential", "Land", "Values", "Homestead", "Sales"] # The currently supported pages.
-        if set(v).issubset(set(possible_pages)):
+        if not set(v).issubset(set(possible_pages)):
             raise ValueError(f"Invalid page in 'pages' list. Must be any of {possible_pages}")
         return v
 

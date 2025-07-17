@@ -1,6 +1,7 @@
 from .models import ActionInput, ActionOutput
 from .task_manager import TaskManager
 from pydantic import validate_call
+import traceback
 
 class EventsHandler():
     def __init__(self, max_drivers: int = 5, max_workers: int = 5, cleanup_interval: int = 3600):
@@ -43,9 +44,9 @@ class EventsHandler():
         
         try: 
             # Extract the arguments from the input model
-            address = arguments['address']
-            pages = arguments['pages']
-            num_results = arguments['num_results']
+            address = arguments.address
+            pages = arguments.pages
+            num_results = arguments.num_results
             
             # Post the scrape task to the TaskManager
             metadata = self._task_manager.post_scrape_task(
@@ -53,22 +54,23 @@ class EventsHandler():
                 pages=pages,
                 num_results=num_results
             )
-            return ActionOutput.Scrape(metadata=metadata)
+            return ActionOutput.Scrape(metadata=metadata,
+                                       error=None, 
+                                       status_code=200)
         
         except Exception as e:
             
             # Get the error message and status code
-            error_message = str(e)
             status_code = 500  # Default to internal server error
             
             if 'metadata' in locals():
                 # If metadata was created before the exception, return it and error data.
                 return ActionOutput.Scrape(metadata=metadata, 
-                                           error=error_message, 
+                                           error=e, 
                                            status_code=status_code)
             else: 
                 # If metadata was not created, return only error data.
-                return ActionOutput.Scrape(error=error_message, 
+                return ActionOutput.Scrape(error=e, 
                                            status_code=status_code)
     
     @validate_call
@@ -92,7 +94,7 @@ class EventsHandler():
             that simply returns the most recently available metadata for the task at the time
             of the request. This may or may not be the final metadata for the task.
         """
-        task_id = arguments['task_id']
+        task_id = arguments.task_id
         metadata = self._task_manager.get_task_status(task_id=task_id)
         return ActionOutput.Status(metadata=metadata, 
                                    error=None, 
@@ -105,7 +107,7 @@ class EventsHandler():
             final metadata for the task, iff the task has been completed. Otherwise,
             the method will return nothing in terms of the task metadata object.
         """
-        task_id = arguments['task_id']
+        task_id = arguments.task_id
         metadata = self._task_manager.get_task_result(task_id=task_id)
         return ActionOutput.Result(metadata=metadata,
                                    error=None, 
@@ -122,7 +124,7 @@ class EventsHandler():
             # TODO: Implement timeout functionality for waiting on tasks. Implement response codes
             and error messages for the timeout case.
         """
-        task_id = arguments['task_id']
+        task_id = arguments.task_id
         metadata = self._task_manager.wait_for_task(task_id=task_id, timeout=60)
         return ActionOutput.Wait(metadata=metadata,
                                  error=None, 

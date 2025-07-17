@@ -5,7 +5,7 @@ import os
 
 API_URL = os.environ.get('API_URL')
 
-class TestSubmitTaskEndpoint(unittest.TestCase):
+class TestInvalidSubmitTask(unittest.TestCase):
 
     def _create_example_tasks(self) -> dict:
         tasks = []
@@ -42,30 +42,30 @@ class TestSubmitTaskEndpoint(unittest.TestCase):
             "pages": [],
             "max_results": 1,
             "extra_field": "This should not be here"
-        })["status_code"], 500)
+        })["status_code"], 400)
 
         # Missing fields
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", "")
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "pages": []
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", ""),
             "pages": []
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", ""),
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
 
     def test_invalid_arguments_type(self):
         """
@@ -80,41 +80,41 @@ class TestSubmitTaskEndpoint(unittest.TestCase):
             "address": "101 Main St",
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "address": 101,
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "address": {"number": 101, "street": "Main St", "dir": ""},
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
 
         # Invalid pages type
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", ""),
             "pages": 101,
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", ""),
             "pages": "This should be a list",
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
 
         # Invalid max_results type
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", ""),
             "pages": [],
             "max_results": "This should be an int"
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", ""),
             "pages": [],
             "max_results": ("This should be an int", 1)
-        })["status_code"], 500)
+        })["status_code"], 400)
 
     def test_invalid_address_values(self):
         """
@@ -129,38 +129,124 @@ class TestSubmitTaskEndpoint(unittest.TestCase):
             "address": ("101", "Main St", ""),
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 200) # Pydandic will coence str to int if possible
         self.assertEqual(self._submit_task({
             "address": (101.5, "Main St", ""),
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (-101, "Main St", 123),
+            "pages": [],
+            "max_results": 1
+        })["status_code"], 400)
 
         # Invalid street
         self.assertEqual(self._submit_task({
             "address": (101, 123, ""),
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
 
         # Invalid dir
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", ()),
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
         self.assertEqual(self._submit_task({
             "address": (101, "Main St", 123),
             "pages": [],
             "max_results": 1
-        })["status_code"], 500)
+        })["status_code"], 400)
+        
+        # Invalid address tuple length
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St"),
+            "pages": [],
+            "max_results": 1
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", "", "Extra value"),
+            "pages": [],
+            "max_results": 1
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (),
+            "pages": [],
+            "max_results": 1
+        })["status_code"], 400)
 
     def test_invalid_pages(self):
-        pass
+        """
+            The expected values of the address tuple are:
+            - number: int
+            - street: str
+            - dir: str
+            If the values are not correct, a ValueError should be raised.
+        """
+        
+        # Invalid pages type
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": "This should be a list",
+            "max_results": 1
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": 123,
+            "max_results": 1
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": None,
+            "max_results": 1
+        })["status_code"], 400)
+
+        # Invalid page content
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": [123],
+            "max_results": 1
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": [None],
+            "max_results": 1
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": [{"page": 1}],
+            "max_results": 1
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": ["owner"],
+            "max_results": 1
+        })["status_code"], 400)
+        
 
     def test_invalid_max_results(self):
-        pass
-
-    def test_submit_task_invalid(self):
-        # Test the submission of an invalid task
-        pass
+        """
+            The expected values of the address tuple are:
+            - number: int
+            - street: str
+            - dir: str
+            If the values are not correct, a ValueError should be raised.
+        """
+        # Invalid max_results type
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": [],
+            "max_results": "This should be an int"
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": [],
+            "max_results": 1.5
+        })["status_code"], 400)
+        self.assertEqual(self._submit_task({
+            "address": (101, "Main St", ""),
+            "pages": [],
+            "max_results": -1
+        })["status_code"], 400)

@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field, ConfigDict, computed_field
-from typing import Optional, List, Tuple
+from pydantic import BaseModel, Field, ConfigDict, computed_field, field_serializer, field_validator
+from typing import Optional, List, Tuple, Union
 from uuid import uuid4
 from enum import Enum
 from datetime import datetime
 from .Record import Record
+from .SafeErrorMixin import SafeErrorMixin
 
 class Status(str, Enum):
     """Enumeration for task status"""
@@ -24,15 +25,20 @@ class TaskType(str, Enum):
     TASKS = "tasks"
     HEALTH = "health"
 
-class Metadata(BaseModel):
+
+class Metadata(SafeErrorMixin, BaseModel):
     """Metadata for a task, including status and timestamps."""
     
+    # Config
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     # General Information
-    id: str = Field(default_factory=lambda: uuid4().hex)
+    id: str = Field(default_factory=lambda: uuid4().hex, alias="task_id", description="Unique identifier for the task")
     
     # Timestamp Data
-    created_at: str = Field(default_factory=lambda: datetime.now(), description="Creation timestamp")
-    finished_at: Optional[str] = Field(None, description="Completion timestamp")
+    created_at: Union[str, datetime] = Field(default_factory=lambda: datetime.now(), description="Creation timestamp")
+    started_at: Optional[Union[str, datetime]] = Field(None,description="Time that service started execution")
+    finished_at: Optional[Union[str, datetime]] = Field(None, description="Completion timestamp")
     
     # Status Data
     status: Status = Field(Status.CREATED, description="Current status of the task (e.g., 'pending', 'running', 'completed', 'failed', 'cancelled')")
@@ -47,8 +53,9 @@ class Metadata(BaseModel):
     result: Record = Field(None, description="The result data from a webscraping job.")
     
     # Error Data
-    error_message: Optional[str] = Field(None, description="Error message if the task failed")
     error_code: Optional[int] = Field(None, description="Error code if the task failed")
+    error_message: Optional[str] = Field(None, description="Error message if appropriate")
+
     
     
     

@@ -64,6 +64,14 @@ class TaskManager:
         """ Check if a future exists. """
         with self._lock:
             return self._futures[task_id] is not None
+        
+    def _future_finished_with_error(self, task_id: str) -> bool:
+        """ Check if a future has finished with an error. """
+        with self._lock:
+            future = self._futures.get(task_id)
+            if future:
+                return future.done() and future.exception() is not None
+            return False
 
     def _task_status(self, task_id: str) -> Status:
         """ Get the hard status of some task. """
@@ -121,25 +129,27 @@ class TaskManager:
         """ Internal method to execute task and update status """
         try:
             with self._lock:
-                if task_id in self.tasks:
-                    self.tasks[task_id].status = Status.RUNNING
-                    self.tasks[task_id].started_at = datetime.now()
+                if task_id in self._tasks.keys():
+                    self._tasks[task_id].status = Status.RUNNING
+                    self._tasks[task_id].started_at = datetime.now()
+                    
             # Execute the function with arguments
             result = func(*args, **kwargs)
 
             with self._lock:
-                if task_id in self.tasks:
-                    self.tasks[task_id].status = Status.COMPLETED
-                    self.tasks[task_id].result = result
-                    self.tasks[task_id].finished_at = datetime.now()
+                if task_id in self._tasks.keys():
+                    self._tasks[task_id].status = Status.COMPLETED
+                    self._tasks[task_id].result = result
+                    self._tasks[task_id].finished_at = datetime.now()
 
         except Exception as e:
             with self._lock:
-                if task_id in self.tasks:
-                    self.tasks[task_id].status = Status.FAILED
-                    self.tasks[task_id].error = str(e)
-                    self.tasks[task_id].result = result
-                    self.tasks[task_id].finished_at = datetime.now()
+                if task_id in self._tasks.keys():
+                    self._tasks[task_id].status = Status.FAILED
+                    self._tasks[task_id].error = e
+                    if 'result' in locals():
+                        self._tasks[task_id].result = result
+                    self._tasks[task_id].finished_at = datetime.now()
 
     # This is our worker function...
     def scrape_address(self, task_id: str, address: tuple, pages: list,
@@ -180,7 +190,7 @@ class TaskManager:
                 # If there is an error, we need to return the driver to the pool.
                 if task_id in self._tasks:
                     self._tasks[task_id].status = Status.FAILED
-                    self._tasks[task_id].error = str(e)
+                    self._tasks[task_id].error = e
                     self.tasks[task_id].result = results
                     self._tasks[task_id].finished_at = datetime.now()
 
@@ -218,12 +228,12 @@ class TaskManager:
                 # Function to execute in helper worker function/thread.
                 'func': self.scrape_address,
                 # Arguments to pass to the worker function.
-                'args': (address, pages, num_results),
+                'args': (task_id, address, pages, num_results),
             }
 
             # Submit the task to the thread pool.
             # The execute task method will handle the execution and status updates and appropriate states changes and error handling.
-            future = self._executer.submit(fn=self._execute_task, **kwargs)
+            future = self._executer.submit(self._execute_task, **kwargs)
 
             # Update the futures.
             with self._lock:
@@ -254,6 +264,10 @@ class TaskManager:
             Metadata object with details.
         """
         with self._lock:
+            future = self._futures.get(task_id)
+            if future and future.done() and future.exception() is not None:
+                raise future.exception()
+            
             task_result = self._tasks.get(task_id)
             if task_result:
                 return task_result
@@ -270,6 +284,10 @@ class TaskManager:
             Metadata object with details.
         """
         with self._lock:
+            future = self._futures.get(task_id)
+            if future and future.done() and future.exception() is not None:
+                raise future.exception()
+            
             task_result = self._tasks.get(task_id)
             if task_result and task_result.status == Status.COMPLETED:
                 return task_result
@@ -279,6 +297,8 @@ class TaskManager:
             self, task_id: str, timeout: float = 60) -> Metadata | None:
         """
         Wait for a task to complete and return its status.
+        
+        # TODO: This method does not achieve the required behavior at all.
 
         Args:
             task_id: Unique task identifier
@@ -287,7 +307,12 @@ class TaskManager:
         Returns:
             Metadata object with final task status or None if timeout/not found
         """
-        future = self.futures.get(task_id)
+        future = None
+        with self._lock:
+            future = self._futures.get(task_id)
+            if future and future.done() and future.exception() is not None:
+                raise future.exception()
+            
         if not future:
             return None
 
