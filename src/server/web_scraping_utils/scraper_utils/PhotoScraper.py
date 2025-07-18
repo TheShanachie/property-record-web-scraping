@@ -1,9 +1,9 @@
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 import urllib, time, os, re, cv2, base64, numpy as np, PIL
-from .GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, click_element
+from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, click_element
 from selenium.webdriver.common.action_chains import ActionChains
-from ..logging_utils import WebScrapeLogger
+from server.logging_utils import WebScrapeLogger
 
 # Function to encode image to base64
 def encode_image_to_base64(image_path: str) -> str:

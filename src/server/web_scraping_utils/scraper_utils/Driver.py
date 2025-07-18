@@ -6,11 +6,11 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from typing import Callable
-from .GetElement import expect_web_element, wait_for_page, wait_for_subpage
-from ..logging_utils import WebScrapeLogger
-from .RecordScraper import next_record, parse_record
-from .RecordSearch import submit_address_search
-from ..config_utils import Config
+from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, wait_for_page, wait_for_subpage
+from server.logging_utils import WebScrapeLogger
+from server.web_scraping_utils.scraper_utils.RecordScraper import next_record, parse_record
+from server.web_scraping_utils.scraper_utils.RecordSearch import submit_address_search
+from server.config_utils import Config
 from threading import Event
 
 class Driver:

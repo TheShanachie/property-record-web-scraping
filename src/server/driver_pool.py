@@ -5,10 +5,16 @@ from typing import Dict, Tuple
 
 class DriverPool:
     def __init__(self, max_drivers=5):
-        """Initialize the driver pool with a fixed number of drivers."""
+        """
+            Initialize the driver pool with a fixed number of drivers.
+            This pool should provide a thread-safe way to borrow and return drivers.
+            
+            # TODO: Verify the thread safety of all actions.
+        
+        """
         self.pool = queue.Queue(maxsize=max_drivers)
         self.lock = threading.Lock()
-        self.active_drivers: Dict[Tuple[str, str], Driver] = {}
+        self.active_drivers: Dict[str, Driver] = {}
 
         try: 
             # Preload the pool with drivers
@@ -30,19 +36,35 @@ class DriverPool:
         with self.lock:
             return not self.pool.empty()
         
-    def _key_already_used(self, task_id: str, thread_id: str) -> bool:
+    def _key_already_used(self, task_id: str) -> bool:
         """ Check whether a key is already used to check out a driver. """
         with self.lock:
-            return (task_id, thread_id) in self.active_drivers.keys()
+            return task_id in self.active_drivers.keys()
+        
+    def stats(self) -> Dict[str, int]:
+        """ 
+        Get the stats about the driver pool.
+        Included Statistics:
+            - Number of available drivers
+            - Number of active drivers
+            - Driver pool size
+        Returns:
+            A dictionary with the statistics of the driver pool.
+        """
+        with self.lock:
+            return {
+                "available": self.pool.qsize(),
+                "active": len(self.active_drivers),
+                "pool_size": self.pool.maxsize
+            }
         
         
-    def borrow_driver(self, task_id: str, thread_id: str) -> Driver | None:
+    def borrow_driver(self, task_id: str) -> Driver | None:
         """ 
         Get a driver from the pool, blocking if none are available.
         
         Args: 
             task_id: str that is uuid4 identifier for task.
-            thread_id: id given by 'threading.get_ident' function. (The function should be called and the id should be passed as an argument.)
         
         Returns:
             A Driver object if one is available to be used. Otherwise, returns None
@@ -54,38 +76,34 @@ class DriverPool:
             return None
         
         # Check that the task does not already have a driver. (Or that we havenn't checked one out with the same details.)
-        if self._key_already_used(task_id, thread_id):
+        if self._key_already_used(task_id):
             print("key already in use.")
             return None
         
         # Update the currrent status of the pool, active tasks, and return
         with self.lock:
-            
-            # Create new id key for active pool.
-            key = (task_id, thread_id)
 
             # remove a driver from the pool.
             driver = self.pool.get()
             
             # Add the driver to the active driver mapping
-            self.active_drivers[key] = driver
+            self.active_drivers[task_id] = driver
             
             # Return
             return driver
         
 
-    def return_driver(self, task_id: str, thread_id: str, raise_error: bool = False) -> None:
+    def return_driver(self, task_id: str, raise_error: bool = False):
         """ Return a driver to the pool. """
         
         # Get the driver from the active drivers mapping and remove it.
         with self.lock:
-            key = (task_id, thread_id)
-            driver = self.active_drivers.pop(key, None)
+            driver = self.active_drivers.pop(task_id, None)
              
         # Raise an error if the driver does not exist with the given key.
         if not driver:
             if raise_error:
-                raise RuntimeError(f"No active driver found for task_id: {task_id} and thread_id: {thread_id}")
+                raise RuntimeError(f"No active driver found for task_id: {task_id}")
             else:
                 return
             
@@ -105,23 +123,29 @@ class DriverPool:
             
             # Raise an error to indicate that the driver could not be returned.
             if raise_error:
-                raise RuntimeError(f"Driver pool is full. Driver for task_id: {task_id} and thread_id: {thread_id} has been destroyed.")
+                raise RuntimeError(f"Driver pool is full. Driver for task_id: {task_id} has been destroyed.")
 
 
-    def kill_driver(self, task_id: str, thread_id: str):
+    def kill_driver(self, task_id: str):
         """ 
         Forcefully close a driver and remove it from the pool and active list. 
         This will only kill drivers that are active. If the driver is in the pool, then
-        this will do nothing.
+        this will do nothing. Even if the driver is being used, then it will be destroyed.
         """
         with self.lock:
             # Remove from active drivers and destroy.
-            driver = self.active_drivers.pop(key=(task_id, thread_id), default = None)
+            driver = self.active_drivers.pop(key=task_id, default = None)
             if driver is not None:
                 driver.destroy()
 
     def shutdown(self):
-        """ Gracefully close all drivers in the pool and kill any drivers which are active. """
+        """ 
+        Shutdown the driver pool, destroying all active and non-active drivers.
+        This will destroy all drivers in the pool and all active drivers.
+        
+        # TODO: Verify that this behavior is actually what we want.
+        """
+        
         with self.lock:
             # Forcefully destroy any active drivers.
             values = self.active_drivers.values()

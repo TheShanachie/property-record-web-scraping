@@ -1,5 +1,5 @@
-from .models import ActionInput, ActionOutput
-from .task_manager import TaskManager
+from server.models import ActionInput, ActionOutput
+from server.task_manager import TaskManager
 from pydantic import validate_call
 import traceback
 
@@ -54,6 +54,8 @@ class EventsHandler():
                 pages=pages,
                 num_results=num_results
             )
+            
+            # Return the metadata object for the scrape task
             return ActionOutput.Scrape(metadata=metadata,
                                        error=None, 
                                        status_code=200)
@@ -72,7 +74,50 @@ class EventsHandler():
                 # If metadata was not created, return only error data.
                 return ActionOutput.Scrape(error=e, 
                                            status_code=status_code)
+        
     
+    @validate_call
+    def status(self, arguments: ActionInput.Status) -> ActionOutput.Status:
+        """
+            Function to get the status/metadata of a specific task. This is a generic method
+            that simply returns the most recently available metadata for the task at the time
+            of the request. This may or may not be the final metadata for the task.
+            
+            # TODO: Some invalid argument handling is also treated as internal server error.
+        """
+        try:
+            task_id = arguments.task_id
+            metadata = self._task_manager.get_task_status(task_id=task_id)
+            return ActionOutput.Status(metadata=metadata, 
+                                    error=None, 
+                                    status_code=200)
+        except Exception as e:
+            # Handle the exception and return an error response
+            return ActionOutput.Status(metadata=None, 
+                                       error=e, 
+                                       status_code=500)
+    
+    @validate_call
+    def result(self, arguments: ActionInput.Result) -> ActionOutput.Result:
+        """
+            Function to get the result of a specific task. This method returns the 
+            final metadata for the task, iff the task has been completed. Otherwise,
+            the method will return nothing in terms of the task metadata object.
+            
+            # TODO: Some invalid argument handling is also treated as internal server error.
+        """
+        try:
+            task_id = arguments.task_id
+            metadata = self._task_manager.get_task_result(task_id=task_id)
+            return ActionOutput.Result(metadata=metadata,
+                                    error=None, 
+                                    status_code=200)
+        except Exception as e:
+            # Handle the exception and return an error response
+            return ActionOutput.Result(metadata=None, 
+                                       error=e, 
+                                       status_code=500)
+        
     @validate_call
     def cancel(self, arguments: ActionInput.Cancel) -> ActionOutput.Cancel:
         """ 
@@ -88,44 +133,15 @@ class EventsHandler():
         )
     
     @validate_call
-    def status(self, arguments: ActionInput.Status) -> ActionOutput.Status:
-        """
-            Function to get the status/metadata of a specific task. This is a generic method
-            that simply returns the most recently available metadata for the task at the time
-            of the request. This may or may not be the final metadata for the task.
-        """
-        task_id = arguments.task_id
-        metadata = self._task_manager.get_task_status(task_id=task_id)
-        return ActionOutput.Status(metadata=metadata, 
-                                   error=None, 
-                                   status_code=200)
-    
-    @validate_call
-    def result(self, arguments: ActionInput.Result) -> ActionOutput.Result:
-        """
-            Function to get the result of a specific task. This method returns the 
-            final metadata for the task, iff the task has been completed. Otherwise,
-            the method will return nothing in terms of the task metadata object.
-        """
-        task_id = arguments.task_id
-        metadata = self._task_manager.get_task_result(task_id=task_id)
-        return ActionOutput.Result(metadata=metadata,
-                                   error=None, 
-                                   status_code=200)
-    
-    @validate_call
     def wait(self, arguments: ActionInput.Wait) -> ActionOutput.Wait:
-        """
-            Function to wait for a specific task to complete. This method will block until the task
-            has been completed, and then return the final metadata for the task. This task does not
-            acknowledge the timeout for the moment, but it can be implemented in the future. At the
-            moment, the timeout is set to 60 seconds, which is the default for the TaskManager.
+        """ 
+            This function is currently not implemented. It is a placeholder for future functionality.
             
-            # TODO: Implement timeout functionality for waiting on tasks. Implement response codes
-            and error messages for the timeout case.
+            # TODO: Implement wait functionality
         """
-        task_id = arguments.task_id
-        metadata = self._task_manager.wait_for_task(task_id=task_id, timeout=60)
-        return ActionOutput.Wait(metadata=metadata,
-                                 error=None, 
-                                 status_code=200)
+        
+        return ActionOutput.Wait(
+            metadata=None,
+            error="Wait functionality is not implemented yet.",
+            status_code=501  # Not Implemented
+        )

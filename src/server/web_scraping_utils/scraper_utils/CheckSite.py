@@ -1,5 +1,5 @@
 from selenium.webdriver.common.by import By
-from .GetElement import check_web_element
+from server.web_scraping_utils.scraper_utils.GetElement import check_web_element
 
 
 def is_address_search_page(driver) -> bool:

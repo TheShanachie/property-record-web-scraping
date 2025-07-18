@@ -6,9 +6,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from typing import Callable
-from .GetElement import expect_web_element, expect_web_elements, check_web_element
-from ..logging_utils import WebScrapeLogger
-from .CheckSite import is_address_search_page, is_address_search_page_results, is_record_page
+from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, expect_web_elements, check_web_element
+from server.web_scraping_utils.scraper_utils.CheckSite import is_address_search_page, is_address_search_page_results, is_record_page
 
 def submit_address_search(driver: WebDriver, address: tuple):
     """

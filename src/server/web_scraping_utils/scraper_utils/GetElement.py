@@ -2,7 +2,7 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from ..logging_utils import WebScrapeLogger
+from server.logging_utils import WebScrapeLogger
 
 CHECK_ELEMENT_WAIT_TIME = 5
 EXPECTED_ELEMENT_WAIT_TIME = 5
