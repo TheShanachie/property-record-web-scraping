@@ -13,6 +13,7 @@ class Status(str, Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    STOPPING = "stopping"
     CANCELLED = "cancelled"
     
 class TaskType(str, Enum):

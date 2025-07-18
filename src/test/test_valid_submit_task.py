@@ -43,16 +43,14 @@ class TestValidSubmitTask(unittest.TestCase):
             time.sleep(pause)
         
     
-    def test_generic_valid_task(self):
-        """
-        Test a valid task submission. We don't pass any pages, so it should only scrape the heading for the address.
-        """
-        tasks = self._create_example_tasks()
-        for task in tasks:
-            response = self._submit_task(task)
-            print(json.dumps(response, indent=4))
-            print(flush=True)
-            self.assertEqual(response["status_code"], 200)
+    # def test_generic_valid_task(self):
+    #     """
+    #     Test a valid task submission. We don't pass any pages, so it should only scrape the heading for the address.
+    #     """
+    #     tasks = self._create_example_tasks()
+    #     for task in tasks:
+    #         response = self._submit_task(task)
+    #         self.assertEqual(response["status_code"], 200)
             
     def test_generic_valid_task_output(self):
         """

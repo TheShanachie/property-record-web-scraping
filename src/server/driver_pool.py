@@ -10,28 +10,30 @@ class DriverPool:
         self.lock = threading.Lock()
         self.active_drivers: Dict[Tuple[str, str], Driver] = {}
 
-        # Preload the pool with drivers
-        for _ in range(max_drivers):
-            self.pool.put(self._create_driver())
+        try: 
+            # Preload the pool with drivers
+            for _ in range(max_drivers):
+                self.pool.put(self._create_driver())
+        except:
+            raise RuntimeError("Failed to initialize driver pool.")
 
     def _create_driver(self):
         """ Create a new Selenium WebDriver instance. """
-        driver = Driver()
-        # print(driver.health())
-        return driver
+        try:
+            driver = Driver()
+            return driver
+        except Exception as e:
+            raise RuntimeError("Failed to create driver.")
     
     def _available_driver_exists(self) -> bool:
         """ Check whether there exists a non-active driver in the pool. """
         with self.lock:
-            return len(self.pool) > 0
+            return not self.pool.empty()
         
     def _key_already_used(self, task_id: str, thread_id: str) -> bool:
         """ Check whether a key is already used to check out a driver. """
         with self.lock:
-            try: 
-                return self.active_drivers[(task_id, thread_id)] is not None
-            except:
-                return False
+            return (task_id, thread_id) in self.active_drivers.keys()
         
         
     def borrow_driver(self, task_id: str, thread_id: str) -> Driver | None:
@@ -48,10 +50,12 @@ class DriverPool:
         
         # Check that there is an available driver instance.
         if not self._available_driver_exists():
+            print("Driver not available.")
             return None
         
         # Check that the task does not already have a driver. (Or that we havenn't checked one out with the same details.)
         if self._key_already_used(task_id, thread_id):
+            print("key already in use.")
             return None
         
         # Update the currrent status of the pool, active tasks, and return

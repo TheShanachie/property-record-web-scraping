@@ -1,4 +1,4 @@
-import os.path, time
+import os.path, time, threading
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.service import Service
@@ -11,6 +11,7 @@ from ..logging_utils import WebScrapeLogger
 from .RecordScraper import next_record, parse_record
 from .RecordSearch import submit_address_search
 from ..config_utils import Config
+from threading import Event
 
 class Driver:
     """
@@ -181,11 +182,11 @@ class Driver:
             raise Exception("Error passing the disclaimer") from e
             
         
-    def address_search(self, address: str, pages: list, num_results: int = 1):
+    def address_search(self, address: tuple, pages: list, num_results: int = 1, quit_event: threading.Event = None):
         """
         Perform an address search and collect data from the specified number of results. 
         Args:
-            address (str): The address to search for.
+            address (tuple): The address to search for.
             pages (list): A list of pages to parse for each result.
             num_results (int, optional): The number of results to collect. Defaults to 1.
         Returns:
@@ -205,6 +206,10 @@ class Driver:
             # Collect the data for number of results
             results = []
             for index in range(1,num_results+1):
+                
+                # If the quit event is true, return here.
+                if quit_event and quit_event.is_set():
+                    break
                 
                 # For each page, collect the data
                 record_data = self.apply(func=parse_record, args={"pages": pages})
@@ -227,6 +232,9 @@ class Driver:
             return results
         
         except Exception as e:
+            
+                # TODO: This is for debugging and should be removed in prod
+                # print("There was an error scraping address in driver.")
 
                 # Get the root cause of the error
                 current_exception = e
@@ -244,7 +252,8 @@ class Driver:
                     WebScrapeLogger.warning(msg=f"In Driver instance {self.id}, address search timed out after {len(results)} records.")
                     
                     # Return the partial results
-                    return results
+                    if 'results' in locals():
+                        return results
                 
                 # Otherwise, the error was some other exception
                 else: 
