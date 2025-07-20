@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from typing import Callable
 from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, wait_for_page, wait_for_subpage
-from server.logging_utils import WebScrapeLogger
+from server.logging_utils import web_scraping_core_logger
 from server.web_scraping_utils.scraper_utils.RecordScraper import next_record, parse_record
 from server.web_scraping_utils.scraper_utils.RecordSearch import submit_address_search
 from server.config_utils import Config
@@ -50,15 +50,15 @@ class Driver:
         except Exception as e:
             
             # Log the error and return
-            WebScrapeLogger.error(msg="An Error was caught while initializing Driver Instance.")
+            web_scraping_core_logger.error(msg="An Error was caught while initializing Driver Instance.")
             
             # Raise a new error and preserve the context
             raise Exception(f"Error initializing Driver Instance") from e
         
     def initialize(self):  
         # Get the configuration details
-        self.config = Config.get("chrome-utils")
-        
+        self.config = Config.get_config("selenium_chrome")
+
         ## Setup chrome options
         self.chrome_options = Options()
         for arg in self.config["chrome-options"]:
@@ -97,7 +97,7 @@ class Driver:
         Driver._id_counter += 1
         
         # Success message
-        WebScrapeLogger.info(msg=f"Driver instance initialized with id - {self.id}")
+        web_scraping_core_logger.info(msg=f"Driver instance initialized with id - {self.id}")
         
     def health(self) -> dict:
         """
@@ -117,7 +117,7 @@ class Driver:
                 return {"status": "unhealthy", "id": self.id}
         except Exception as e:
             # Log the error
-            WebScrapeLogger.error(msg=f"Error checking health of driver instance {self.id}")
+            web_scraping_core_logger.error(msg=f"Error checking health of driver instance {self.id}")
             return {"status": "error", "id": self.id, "error": str(e)}
         
             
@@ -138,7 +138,7 @@ class Driver:
         try:
             # log if needed  
             if log:
-                WebScrapeLogger.info(msg=f"Applying function '{func.__name__}' on driver id - {self.id}")
+                web_scraping_core_logger.info(msg=f"Applying function '{func.__name__}' on driver id - {self.id}")
                         
             # Apply with args or not
             if args is not None:
@@ -150,7 +150,7 @@ class Driver:
         except Exception as e:
             
             # Log the error.
-            WebScrapeLogger.error(msg=f"Error applying function '{func.__name__}' on driver id - {self.id}")
+            web_scraping_core_logger.error(msg=f"Error applying function '{func.__name__}' on driver id - {self.id}")
             
             # Raaise a new error and preserve the context
             raise Exception(f"Error applying function '{func.__name__}'") from e
@@ -176,7 +176,7 @@ class Driver:
         except Exception as e:
             
             # Log the error
-            WebScrapeLogger.error(msg="Error passing the disclaimer")
+            web_scraping_core_logger.error(msg="Error passing the disclaimer")
             
             # Raise a new error and preserve the context
             raise Exception("Error passing the disclaimer") from e
@@ -195,12 +195,12 @@ class Driver:
         try: 
             # Pass the discalimer
             if not self.pass_disclaimer():
-                WebScrapeLogger.error(msg=f"In Driver instance {self.id}, unsuccessful in passing the disclaimer.")
+                web_scraping_core_logger.error(msg=f"In Driver instance {self.id}, unsuccessful in passing the disclaimer.")
                 return None # Did not get past the disclaimer
             
             # Submit the address
             if self.apply(func=submit_address_search, args={"address": address}) is None:
-                WebScrapeLogger.warning(msg=f"In Driver instance {self.id}, address search not successful.")
+                web_scraping_core_logger.warning(msg=f"In Driver instance {self.id}, address search not successful.")
                 return None # Did not get past the address search
             
             # Collect the data for number of results
@@ -216,14 +216,14 @@ class Driver:
                 
                 # Something went wrong. Break the loop
                 if record_data is None:
-                    WebScrapeLogger.warning(msg=f"In Driver instance {self.id}, record parsing exited after {index} records.")
+                    web_scraping_core_logger.warning(msg=f"In Driver instance {self.id}, record parsing exited after {index} records.")
                     break
                 
                 # Append the current record to final results
                 results.append(record_data)
                 
                 # Success message
-                WebScrapeLogger.info(msg=f"In Driver instance {self.id}, data successfully collected for record {index} of {num_results} with head: {record_data['heading']}")
+                web_scraping_core_logger.info(msg=f"In Driver instance {self.id}, data successfully collected for record {index} of {num_results} with head: {record_data['heading']}")
                 
                 # Get the next record
                 self.apply(func=next_record, args={"record_index": index+1})
@@ -249,7 +249,7 @@ class Driver:
                 ## This type of error is unfortunately common, and we need to handle it gracefully.
                 if isinstance(root_error, TimeoutException):
                     # Log the behavior
-                    WebScrapeLogger.warning(msg=f"In Driver instance {self.id}, address search timed out after {len(results)} records.")
+                    web_scraping_core_logger.warning(msg=f"In Driver instance {self.id}, address search timed out after {len(results)} records.")
                     
                     # Return the partial results
                     if 'results' in locals():
@@ -258,7 +258,7 @@ class Driver:
                 # Otherwise, the error was some other exception
                 else: 
                     # Log the error
-                    WebScrapeLogger.error(msg=f"Error in address search for driver instance {self.id}")
+                    web_scraping_core_logger.error(msg=f"Error in address search for driver instance {self.id}")
                     
                     # Raise a new error and preserve the context
                     raise Exception(f"Error in address search for driver instance {self.id}") from e
@@ -273,7 +273,7 @@ class Driver:
         except Exception as e:
             
             # Log the error and return
-            WebScrapeLogger.error(msg="An Error was caught while re-initializing Driver Instance.")
+            web_scraping_core_logger.error(msg="An Error was caught while re-initializing Driver Instance.")
             
             # Raise a new error and preserve the context
             raise Exception(f"Error Reseting Driver Instance") from e

@@ -2,7 +2,7 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from server.logging_utils import WebScrapeLogger
+from server.logging_utils import web_scraping_core_logger
 
 CHECK_ELEMENT_WAIT_TIME = 5
 EXPECTED_ELEMENT_WAIT_TIME = 5
@@ -23,7 +23,7 @@ def expect_web_element(
     except Exception as e:
 
         # Log the unexpected behavior.
-        WebScrapeLogger.error(f"Expected element via - '{args}' but it was not found.")
+        web_scraping_core_logger.error(f"Expected element via - '{args}' but it was not found.")
 
         # raise an exception if the element is not found.
         raise Exception(f"Expected element via - '{args}' but it was not found.") from e
@@ -43,7 +43,7 @@ def expect_web_elements(
     except Exception as e:
 
         # Log the unexpected behavior.
-        WebScrapeLogger.error(f"Expected elements via - '{args}' but it was not found.")
+        web_scraping_core_logger.error(f"Expected elements via - '{args}' but it was not found.")
 
         # raise exception and preserve the context.
         raise Exception(
@@ -87,7 +87,7 @@ def wait_for_page(
     except Exception as e:
 
         # Log the unexpected behavior.
-        WebScrapeLogger.error(
+        web_scraping_core_logger.error(
             f"Expected record '{expected_index}' but it was not found."
         )
 
@@ -112,7 +112,7 @@ def wait_for_subpage(
     except Exception as e:
 
         # Log the unexpected behavior.
-        WebScrapeLogger.error(
+        web_scraping_core_logger.error(
             f"Expected subpage '{expected_page}' but it was not found."
         )
 
@@ -137,7 +137,7 @@ def click_element(
     except Exception as e:
 
         # Log the unexpected behavior.
-        WebScrapeLogger.error(f"Error clicking element via - '{args}'.")
+        web_scraping_core_logger.error(f"Error clicking element via - '{args}'.")
 
         # raise an exception and preserve the context.
         raise Exception(f"Error clicking element via - '{args}'." ) from e

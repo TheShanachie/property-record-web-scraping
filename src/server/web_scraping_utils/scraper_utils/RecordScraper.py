@@ -3,7 +3,7 @@ from selenium.webdriver.common.by import By
 import urllib, time, os, re
 from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, wait_for_page, click_element
 from selenium.webdriver.common.action_chains import ActionChains
-from server.logging_utils import WebScrapeLogger
+from server.logging_utils import web_scraping_core_logger
 from server.web_scraping_utils.scraper_utils.PhotoScraper import scrape_photo_page
 
 def parse_record_card(table: WebDriver) -> dict:
@@ -30,7 +30,7 @@ def parse_record_card(table: WebDriver) -> dict:
     except Exception as e:
         
         # Log the error
-        WebScrapeLogger.error("Error parsing record card")
+        web_scraping_core_logger.error("Error parsing record card")
         
         # Raise the error and preserve the context
         raise Exception("Error parsing record card") from e
@@ -124,7 +124,7 @@ def parse_record_tables(driver: WebDriver) -> dict:
     except Exception as e:
             
         # Log the error
-        WebScrapeLogger.error("Error parsing record tables")
+        web_scraping_core_logger.error("Error parsing record tables")
         
         # Raise the error and preserve the context
         raise Exception("Error parsing record tables") from e
@@ -148,7 +148,7 @@ def go_to_record_page(driver: WebDriver, page: str) -> None:
     except Exception as e:
         
         # Log the error
-        WebScrapeLogger.error("Error navigating to record page")
+        web_scraping_core_logger.error("Error navigating to record page")
         
         # Raise the error and preserve the context
         raise Exception(f"Error navigating to record page: {page}") from e
@@ -171,7 +171,7 @@ def is_table_card_arrow(driver: WebDriver) -> bool:
     except Exception as e:
             
         # Log the error
-        WebScrapeLogger.error("Error checking for table card arrow")
+        web_scraping_core_logger.error("Error checking for table card arrow")
         
         # Raise the error and preserve the context
         raise Exception("Error checking for table card arrow") from e
@@ -209,7 +209,7 @@ def next_record(driver: WebDriver, record_index: int) -> int | None:
     except Exception as e:
         
         # Log the error
-        WebScrapeLogger.error("Error navigating to next record")
+        web_scraping_core_logger.error("Error navigating to next record")
         
         # Raise the error and preserve the context
         raise Exception("Error navigating to next record") from e
@@ -226,7 +226,7 @@ def press_table_card_arrow(driver: WebDriver) -> None:
         expect_web_element(driver, args=(By.XPATH, ".//*[@title='next page']")).click()
     except Exception as e:
         # Log the error
-        WebScrapeLogger.error("Error pressing table card arrow")
+        web_scraping_core_logger.error("Error pressing table card arrow")
         
         # Raise the error and preserve the context
         raise Exception("Error pressing table card arrow") from e
@@ -265,7 +265,7 @@ def parse_record(driver: WebDriver, pages: list) -> dict:
     except Exception as e:
         
         # Log the error
-        WebScrapeLogger.error("Error parsing record")
+        web_scraping_core_logger.error("Error parsing record")
         
         # Raise the error and preserve the context
         raise Exception("Error parsing record") from e
@@ -310,7 +310,7 @@ def get_record_heading(driver: WebDriver):
         return result
     except Exception as e:
         # Log the error
-        WebScrapeLogger.error("Error getting record heading")
+        web_scraping_core_logger.error("Error getting record heading")
         
         # Raise the error and preserve the context
         raise Exception("Error getting record heading") from e
@@ -330,7 +330,7 @@ def get_listing_index(driver: WebDriver):
         return [int(x) for x in widget_bar.get_attribute("value").split("of")]
     except Exception as e:
         # Log the error
-        WebScrapeLogger.error("Error getting listing index")
+        web_scraping_core_logger.error("Error getting listing index")
         
         # Raise the error and preserve the context
         raise Exception("Error getting listing index") from e

@@ -3,7 +3,7 @@ from selenium.webdriver.common.by import By
 import urllib, time, os, re, cv2, base64, numpy as np, PIL
 from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, click_element
 from selenium.webdriver.common.action_chains import ActionChains
-from server.logging_utils import WebScrapeLogger
+from server.logging_utils import web_scraping_core_logger
 
 # Function to encode image to base64
 def encode_image_to_base64(image_path: str) -> str:
@@ -17,7 +17,7 @@ def encode_image_to_base64(image_path: str) -> str:
         return image_base64
     except Exception as e:
         # Log the error
-        WebScrapeLogger.error("Error encoding image to base64")
+        web_scraping_core_logger.error("Error encoding image to base64")
         
         # Raise the error and preserve the context
         raise Exception("Error encoding image to base64") from e
@@ -32,7 +32,7 @@ def decode_base64_to_image(image_base64: str) -> np.ndarray:
         return image_decoded
     except Exception as e:
         # Log the error
-        WebScrapeLogger.error("Error decoding base64 to image")
+        web_scraping_core_logger.error("Error decoding base64 to image")
         
         # Raise the error and preserve the context
         raise Exception("Error decoding base64 to image") from e
@@ -102,7 +102,7 @@ def scrape_current_photo(driver: WebDriver):
     except Exception as e:
         
         # Log the error
-        WebScrapeLogger.error("Error scraping current photo")
+        web_scraping_core_logger.error("Error scraping current photo")
         
         # Raise the error and preserve the context
         raise Exception("Error scraping current photo") from e
@@ -151,7 +151,7 @@ def scrape_photo_page(driver: WebDriver) -> list:
     except Exception as e:
         
         # Log the error
-        WebScrapeLogger.error("Error scraping photo page")
+        web_scraping_core_logger.error("Error scraping photo page")
         
         # Raise the error and preserve the context
         raise Exception("Error scraping photo page") from e

@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request
 from typing import Callable, Tuple, Any, Dict, Optional, List
 from pydantic import ValidationError
-from .events import EventsHandler
-from .models import ActionInput, ActionOutput
+from server.events import EventsHandler
+from server.models import ActionInput, ActionOutput
 import time, json, uuid, traceback
 
 # Create a Blueprint instead of Flask app
@@ -16,7 +16,6 @@ def init_events_handler(max_drivers: int = 5, max_workers: int = 5, cleanup_inte
                                    max_workers=max_workers, 
                                    cleanup_interval=cleanup_interval)
     return events_handler
-
 
 def get_events_handler():
     """Get the current EventsHandler instance"""
