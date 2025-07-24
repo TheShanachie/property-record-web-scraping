@@ -82,6 +82,9 @@ class Health(OutputModel):
     # Actual Data
     health: str = Field(None, description="Health status of the service")
     
+    # Driver pool info
+    driver_pool: Optional[Dict[Any, Any]] = Field(None, description="Information about the driver pool, including available and active drivers")
+    
     @field_validator('health', mode='after')
     @classmethod
     def health_match(cls, v):

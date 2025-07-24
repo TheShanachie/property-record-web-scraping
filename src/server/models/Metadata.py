@@ -51,7 +51,7 @@ class Metadata(SafeErrorMixin, BaseModel):
     num_results: int = Field(..., description="Number of results to return from the scrape", ge=1, le=10)
     
     # Result
-    result: Record = Field(None, description="The result data from a webscraping job.")
+    result: List[Record] = Field(None, description="The result data from a webscraping job.")
     
     # Error Data
     error_code: Optional[int] = Field(None, description="Error code if the task failed")

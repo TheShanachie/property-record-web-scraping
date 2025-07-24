@@ -1,4 +1,4 @@
-import os.path, time, threading
+import os.path, time, threading, json
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.service import Service
@@ -58,6 +58,7 @@ class Driver:
     def initialize(self):  
         # Get the configuration details
         self.config = Config.get_config("selenium_chrome")
+        # print(json.dumps(self.config, indent=4))
 
         ## Setup chrome options
         self.chrome_options = Options()
@@ -182,7 +183,7 @@ class Driver:
             raise Exception("Error passing the disclaimer") from e
             
         
-    def address_search(self, address: tuple, pages: list, num_results: int = 1, quit_event: threading.Event = None):
+    def address_search(self, address: tuple, pages: list, num_results: int = 1, quit_event: threading.Event = None) -> list:
         """
         Perform an address search and collect data from the specified number of results. 
         Args:
@@ -191,17 +192,26 @@ class Driver:
             num_results (int, optional): The number of results to collect. Defaults to 1.
         Returns:
             list: A list of collected data for each result. Returns an empty list if no results.
+        Raises:
+            RuntimeError: If the disclaimer cannot be passed or the address search is not successful, continued with unexpected behavior.
         """
         try: 
             # Pass the discalimer
             if not self.pass_disclaimer():
+                # Log the behavior
                 web_scraping_core_logger.error(msg=f"In Driver instance {self.id}, unsuccessful in passing the disclaimer.")
-                return None # Did not get past the disclaimer
+                
+                # Raise a runtime error.
+                raise RuntimeError(f"In Driver instance {self.id}, unsuccessful in passing the disclaimer.")
             
             # Submit the address
             if self.apply(func=submit_address_search, args={"address": address}) is None:
+                
+                # Log the behavior
                 web_scraping_core_logger.warning(msg=f"In Driver instance {self.id}, address search not successful.")
-                return None # Did not get past the address search
+                
+                # Raise a runtime error.
+                raise RuntimeError(f"In Driver instance {self.id}, address search not successful.")
             
             # Collect the data for number of results
             results = []

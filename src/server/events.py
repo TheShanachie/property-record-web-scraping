@@ -16,6 +16,7 @@ class EventsHandler():
             that were initialized in the constructor.
         """
         self._task_manager.shutdown()
+        
 
     @validate_call
     def health(self) -> ActionOutput.Health:
@@ -24,7 +25,7 @@ class EventsHandler():
             
             # TODO: There are so many things we can do here to improve visibility.
         """
-        return ActionOutput.Health(health="healthy", error=None, status_code=200)
+        return ActionOutput.Health(health="healthy", driver_pool=self._task_manager.driver_pool_info(), error=None, status_code=200)
 
     @validate_call
     def tasks(self) -> ActionOutput.Tasks:

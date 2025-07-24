@@ -5,6 +5,7 @@ from typing import List, Tuple, Union, Dict, Callable, Optional, Set
 from concurrent.futures import ThreadPoolExecutor, Future
 from datetime import datetime
 from server.driver_pool import DriverPool
+from server.logging_utils import event_handling_operations_logger
 import threading
 import time, json
 
@@ -26,7 +27,7 @@ class TaskManager:
             self._executer = ThreadPoolExecutor(max_workers=max_workers)
             self._tasks: Dict[str, Metadata] = {}
             self._futures: Dict[str, (Future, threading.Event)] = {}
-            self._lock = threading.Lock()
+            self._lock = threading.RLock()  # Use RLock to allow reentrant locking
 
             # Start the cleanup thread
             self._shutdown = False
@@ -39,11 +40,29 @@ class TaskManager:
             # Create the driver pool
             self._max_drivers = max_drivers
             self._driver_pool = DriverPool(max_drivers=max_drivers)
+            
+            # Log the initialization of the TaskManager
+            event_handling_operations_logger.debug(
+                f"TaskManager initialized with max_workers={max_workers}, max_drivers={max_drivers}, cleanup_interval={cleanup_interval} seconds."
+            )
 
         except Exception as e:
+            
+            # Log the error during initialization
+            event_handling_operations_logger.error(
+                f"Error initializing TaskManager: {e}", exc_info=True)
 
             # Simply raise the error to the next scope.
             raise RuntimeError(f"Failed to initialize TaskManager: {e}") from e
+        
+    def driver_pool_info(self) -> dict:
+        """
+        Get information about the driver pool.
+        
+        Returns:
+            A dictionary containing the driver pool information.
+        """
+        return self._driver_pool.stats()
         
     def shutdown(self):
         """
@@ -117,12 +136,24 @@ class TaskManager:
                 
                 # Check that the task is in a finished state.
                 if task.status in {Status.COMPLETED, Status.FAILED, Status.CANCELLED}:
+                    
+                    # Log this event
+                    event_handling_operations_logger.debug(
+                        f"Attempted to cancel task with ID '{task_id}' that is already finished."
+                    )
+                    
                     return  # Task is already finished, nothing to cancel.
                 
                 # If the task is already stopping, then we do nothing besides asserting the state.
                 if task.status == Status.STOPPING:
                     assert future_data is not None, f"Future data for task_id '{task_id}' is missing while task is stopping."
                     assert future_data[1].is_set(), f"Quit event for task_id '{task_id}' is not set while task is stopping."
+                    
+                    # Log this event
+                    event_handling_operations_logger.debug(
+                        f"While attempting to cancel task, task with ID '{task_id}' is already stopping, no further action needed."
+                    )
+                    
                     return
                 
                 # At this point, the task is running so there must be a future and quit event.
@@ -133,19 +164,44 @@ class TaskManager:
                 
                 # If the future is already done, then we do nothing.
                 if future.done():
+                    
+                    # Log this event
+                    event_handling_operations_logger.debug(
+                        f"Attempted to cancel task with ID '{task_id}' that is already done."
+                    )
+                    
                     return
                 
                 # If the future is not done, then we can try to cancel it.
                 if future.cancel():  # Attempt to cancel the future.
+                    
+                    # Log the cancellation event.
+                    event_handling_operations_logger.debug(
+                        f"Task with ID '{task_id}' was cancelled successfully via threading functionality."
+                    )
+                    
                     return
                 
                 # If the future could not be cancelled, then we resort to setting the quit event and waiting for it to finish early.
                 quit_event.set()  # Signal the task to stop if it is running
                 task.status = Status.STOPPING  # Update the task status to stopping
                 
+                # Log the cancellation event.
+                event_handling_operations_logger.debug()
+                
+                # Log the cancelation event
+                event_handling_operations_logger.debug(
+                    f"Task with ID '{task_id}' could not be cancelled immediately, but quit event is set and task is stopping."
+                )
+                
                 return  # Task cancellation initiated, but may take time to complete.
             
         except Exception as e:
+            
+            # Log the error during task cancellation
+            event_handling_operations_logger.error(
+                f"Error while attempting to cancel task with ID '{task_id}': {e}", exc_info=True
+            )
             
             # If there is an error, we raise a RuntimeError with the error message.
             raise RuntimeError(f"Error while attempting to cancel task with ID '{task_id}': {e}")
@@ -174,7 +230,6 @@ class TaskManager:
                 AssertionError: If the future is not done, if the task_id or task metadata cannot be found, or the task did not finish successfully w/o errors.
             """
             assert future.done(), "Future is not done. Something went wrong."
-            assert future.result() is not None, "Future did not finish with a result."
             
             # Get the task metadata object.
             with self._lock:
@@ -185,6 +240,11 @@ class TaskManager:
                 task_metadata.status = Status.COMPLETED
                 task_metadata.result = future.result()
                 task_metadata.finished_at = datetime.now()
+                
+                # Log the successful completion of the task.
+                event_handling_operations_logger.debug(
+                    f"Task with ID '{task_id}' completed successfully with result: {task_metadata.result.__sizeof__() if task_metadata.result else 'None'} bytes."
+                )
         
         def _finish_with_error(future: Future, task_id: str) -> None:
             """
@@ -210,6 +270,11 @@ class TaskManager:
                 task_metadata.status = Status.FAILED
                 task_metadata.error = future.exception()
                 task_metadata.finished_at = datetime.now()
+                
+                # Log the error that occurred during task completion.
+                event_handling_operations_logger.debug(
+                    f"Task with ID '{task_id}' finished healthfully, but failed before completion with error: {task_metadata.error}."
+                )
         
         def _finish_with_quit(future: Future, task_id: str) -> None:
             """
@@ -240,6 +305,11 @@ class TaskManager:
                 task_metadata.status = Status.CANCELLED
                 task_metadata.result = future.result() # We expect this to be at least an empty list.
                 task_metadata.finished_at = datetime.now()
+                
+                # Log the quit event that occurred during task completion.
+                event_handling_operations_logger.debug(
+                    f"Task with ID '{task_id}' finished early due to a quit event with result: {task_metadata.result.__sizeof__() if task_metadata.result else 'None'} bytes."
+                )
         
         def _finish_with_cancelled(future: Future, task_id: str) -> None:
             """
@@ -265,6 +335,11 @@ class TaskManager:
                 task_metadata.status = Status.CANCELLED
                 task_metadata.finished_at = datetime.now()
                 
+                # Log the cancellation event.
+                event_handling_operations_logger.debug(
+                    f"Task with ID '{task_id}' was cancelled before running."
+                )
+                
         def _verify_driver_is_returned(task_id: str) -> None:
             """
             Verify that the driver is returned to the pool after task completion.
@@ -279,7 +354,8 @@ class TaskManager:
             """
             
             # TODO: Implement this method to verify that the driver is returned to the pool.
-            pass
+            in_use = self._driver_pool._key_already_used(task_id)
+            assert not in_use, f"Driver for task_id '{task_id}' exists in the active drivers mapping, but should have been returned to the pool."
             
         
         # Define the callback function that will be called when a task is finished.
@@ -303,49 +379,78 @@ class TaskManager:
                 AssertionError: If the future is not done, or if the task_id or task metadata cannot be found.
             """
             
-            # Since this is a future callback, we can assume the task is done.
-            assert future.done(), "Future is not done. Something went wrong."
+            # Log the use of the callback function.
+            event_handling_operations_logger.debug(f"Callback function is being called.")
             
-            # Get the task_id from the future.
-            task_id = self._task_id_of_future(future)
-            assert task_id is not None, "Task ID not found for the completed future."
+            try:
             
-            # Get the task metadata object.
-            with self._lock:
-                task_metadata = self._tasks.get(task_id, None)
-                assert task_metadata is not None, f"Task metadata not found for task_id: {task_id}."
-            
-                # Address the possible outcomes for the task.
+                # Since this is a future callback, we can assume the task is done.
+                assert future.done(), "Future is not done. Something went wrong."
                 
-                # 1. The future was cancelled before running. (no result)
-                if future.cancelled(): # The future was cancelled before running.
-                   _finish_with_cancelled(future, task_id)
-                   _verify_driver_is_returned(task_id)
-                   return
-               
-                # 2. The future completed with an exception. (no result)
-                if future.exception() is not None: # The future completed with an exception.
-                    _finish_with_error(future, task_id)
-                    _verify_driver_is_returned(task_id)
-                    return
+                # Get the task_id from the future.
+                task_id = self._task_id_of_future(future)
+                assert task_id is not None, "Task ID not found for the completed future."
                 
-                # 3. The future completed early due to a quit/cancel event. (result is available)
-                if future.done() and self._futures.get(task_id, None)[1].is_set():
-                    _finish_with_quit(future, task_id)
-                    _verify_driver_is_returned(task_id)
-                    return
-               
-                # 4. The future completed successfully. (result is available)
-                if future.result() is not None:
-                    _finish_successfully(future, task_id)
-                    _verify_driver_is_returned(task_id)
-                    return
+                # Get the task metadata object.
+                with self._lock:
+                    task_metadata = self._tasks.get(task_id, None)
+                    assert task_metadata is not None, f"Task metadata not found for task_id: {task_id}."
                 
-            # If none of the conditions were met, we raise an error. Something went wrong.
-            raise RuntimeError(f"Task with ID '{task_id}' finished in an unexpected state.")
+                    # Address the possible outcomes for the task.
+                    
+                    # 1. The future was cancelled before running. (no result)
+                    if future.cancelled(): # The future was cancelled before running.
+                        _finish_with_cancelled(future, task_id)
+                        
+                        # Log the behavior.
+                        event_handling_operations_logger.debug(
+                            f"Callback finalizing for task with ID '{task_id}'. The future was cancelled before running."
+                        )
+                        
+                    # 2. The future completed with an exception. (no result)
+                    elif future.exception() is not None: # The future completed with an exception.
+                        _finish_with_error(future, task_id)
+                        
+                        # Log the behavior.
+                        event_handling_operations_logger.debug(
+                            f"Callback finalizing for task with ID '{task_id}'. The future completed with an exception: {future.exception()}"
+                        )
+                        
+                    # 3. The future completed early due to a quit/cancel event. (result is available)
+                    elif future.done() and self._futures.get(task_id, None)[1].is_set():
+                        _finish_with_quit(future, task_id)
+                        
+                        # Log the behavior.
+                        event_handling_operations_logger.debug(
+                            f"Callback finalizing for task with ID '{task_id}'. The future completed early due to a quit event with result: {task_metadata.result.__sizeof__() if task_metadata.result else 'None'} bytes."
+                        )
+                        
+                    # 4. The future completed successfully. (result is available)
+                    else:
+                        _finish_successfully(future, task_id)
+                        
+                        # Log the behavior.
+                        event_handling_operations_logger.debug(
+                            f"Callback finalizing for task with ID '{task_id}'. The future completed successfully."
+                        )
+                
+                # Verify driver is returned OUTSIDE the lock to prevent deadlock
+                _verify_driver_is_returned(task_id)
+                return
+                    
+            # Handle a number of errors. (Log these errors.)
+            except Exception as e:
+                
+                # Log the error that occurred during task completion.
+                event_handling_operations_logger.error(
+                    f"Error while finalizing task with ID '{task_id}': {e}", exc_info=True
+                )
+                
+                # If there is an error, we raise a RuntimeError with the error message.
+                raise RuntimeError(f"Error while finalizing task with ID '{task_id}': {e}") from e
                     
             ## THIS IS THE END OF THE CALLBACK FUNCTION ##
-            ## IM BLIND AND STUPID SO I NEED THIS LOL ##
+            ## IM BLIND AND STUPID SO I NEED THIS INDICATION LOL ##
         
         # Return the callback function which we just defined.        
         return _task_finished_callback
@@ -403,6 +508,55 @@ class TaskManager:
     #                 if 'result' in locals():
     #                     self._tasks[task_id].result = result
     #                 self._tasks[task_id].finished_at = datetime.now()
+    
+    def _poll_for_driver(self, task_id: str, interval: int = 10, timeout: int | None = None):
+        """
+        Poll for a driver to become available in the pool. The interval must be smaller than the timeout if one is specified.
+        
+        Args:
+            task_id: Unique identifier for the task.
+            interval: Time in seconds to wait between polls.
+            timeout: Optional maximum time in seconds to wait for a driver.
+            
+        Returns:
+            A driver from the pool when available.
+            
+        Raises:
+            RuntimeError: If no driver is available within the timeout period.
+            AssertionError: If the interval is not greater than 0 or if the timeout is not greater than the interval.
+        """
+        
+        # Assert basic conditions 
+        assert interval > 0, "Interval must be greater than 0."
+        assert timeout is None or timeout > interval, "Timeout must be greater than interval if specified."
+        
+        # Log the behavior here.
+        event_handling_operations_logger.debug(f"Starting to poll for driver for task: {task_id} and interval: {interval}.")
+        
+        # Start time for timeout (This is a float so not pretty)
+        end_time = time.time() + timeout if timeout else None
+        
+        while True:
+            
+            # Attempt to borrow a driver.
+            driver = self._driver_pool.borrow_driver(task_id=task_id)
+            
+            # If the driver is not None, return the driver.
+            if driver:
+                event_handling_operations_logger.debug(f"While polling for driver for task: {task_id}, driver was found.")
+                return driver
+            
+            # Do we wait anymore or is there a timeout
+            if timeout and (end_time < time.time()):
+                raise RuntimeError(f"While polling for a driver from the driver pool, a timeout occured after {timeout} seconds.")
+            
+            # Log this behavior
+            event_handling_operations_logger.debug(f"While polling for driver for task: {task_id}, none was found. Waiting interval: {interval}")
+            
+            # Otherwise, we wait and poll again if appropriate.
+            time.sleep(interval)
+        
+        
                     
     def _execute_scrape_task(self, task_id: str, quit_event: threading.Event) -> List | None:
         """
@@ -422,6 +576,7 @@ class TaskManager:
             RuntimeError: If any errors occur during the execution of this method.
 
         """
+        
         # Try to execute the scrape task actions
         try:
             
@@ -436,16 +591,9 @@ class TaskManager:
                 task_data.started_at = datetime.now()
             
             # Get a driver from the pool and execute the scrape_address function.
-            # TODO: This driver behavior is inconsistent and needs to be refactored. We find a better way to handle if no driver is available.
-            while True:
-                # Check that a driver is available in the pool.
-                driver = self._driver_pool.borrow_driver(task_id=task_id)
-                if driver:
-                    break
-                print(f"Could not borrow a driver from the pool for task ID '{task_id}'. Retrying in 10 seconds...") # For debugging purposes.
-                print("Showing driver pool stats:")
-                print(json.dumps(self._driver_pool.stats(), indent=4))
-                time.sleep(10)  # Wait for a driver to become available.
+            driver = self._poll_for_driver(task_id=task_id,
+                                           interval=10,
+                                           timeout=None)
                 
             # Once we have a driver, we can execute the scrape_address function.
             results = driver.address_search(
@@ -458,10 +606,20 @@ class TaskManager:
             # After the scrape is complete, we need to return the driver to the pool.
             self._driver_pool.return_driver(task_id=task_id)
             
+            # Log the successful execution of the scrape task.
+            event_handling_operations_logger.debug(
+                f"Scrape task with ID '{task_id}' executed successfully with {results.__sizeof__() if results else 'None'} bytes of results. Results: {results}."
+            )
+            
             # Return the results.
             return results
         
         except Exception as e:
+            
+            # Log the error
+            event_handling_operations_logger.error(
+                f"Error while executing scrape task with ID '{task_id}': {e}", exc_info=True
+            )
             
             # Some error occurred during the execution of the scrape task.
             raise RuntimeError(f"Error while executing scrape task with ID '{task_id}': {e}") from e
@@ -500,17 +658,14 @@ class TaskManager:
         with self._lock:
             self._futures[metadata.id] = (future, quit_event)
             
+        # Log the creation of the task.
+        event_handling_operations_logger.debug(
+            f"Task with ID '{metadata.id}' created for address {address} with pages {pages} and num_results {num_results}."
+        )
+            
         # Return the metadata object for the task.
         return metadata
             
-            
-            
-        
-        
-        
-        
-        
-        
         
 
     # # This is our worker function...

@@ -2,6 +2,7 @@ import threading
 import queue
 from server.web_scraping_utils.scraper_utils import Driver
 from typing import Dict, Tuple
+from server.logging_utils import resource_management_logger
 
 class DriverPool:
     def __init__(self, max_drivers=5):
@@ -13,23 +14,39 @@ class DriverPool:
         
         """
         self.pool = queue.Queue(maxsize=max_drivers)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.active_drivers: Dict[str, Driver] = {}
 
         try: 
             # Preload the pool with drivers
             for _ in range(max_drivers):
                 self.pool.put(self._create_driver())
-        except:
-            raise RuntimeError("Failed to initialize driver pool.")
+                
+            # Log the initialization of the driver pool
+            resource_management_logger.info(f"Driver pool initialized with {max_drivers} drivers.")
+            
+        except Exception as e:
+            
+            # Log the error if driver pool initialization fails
+            resource_management_logger.error("Failed to initialize driver pool.", exc_info=True)
+            
+            raise RuntimeError("Failed to initialize driver pool.") from e
 
     def _create_driver(self):
         """ Create a new Selenium WebDriver instance. """
         try:
+            # Log the creation of a new driver
+            resource_management_logger.info("Creating a new driver instance.")
+            
             driver = Driver()
             return driver
+        
         except Exception as e:
-            raise RuntimeError("Failed to create driver.")
+            
+            # Log the error if driver creation fails
+            resource_management_logger.error("Failed to create driver.", exc_info=True)
+            
+            raise RuntimeError("Failed to create driver.") from e
     
     def _available_driver_exists(self) -> bool:
         """ Check whether there exists a non-active driver in the pool. """
@@ -53,9 +70,10 @@ class DriverPool:
         """
         with self.lock:
             return {
-                "available": self.pool.qsize(),
-                "active": len(self.active_drivers),
-                "pool_size": self.pool.maxsize
+                "num_available": self.pool.qsize(),
+                "num_active": len(self.active_drivers),
+                "pool_size": self.pool.maxsize,
+                "active": {key: value.health() for key, value in self.active_drivers.items()}
             }
         
         
@@ -72,12 +90,12 @@ class DriverPool:
         
         # Check that there is an available driver instance.
         if not self._available_driver_exists():
-            print("Driver not available.")
+            resource_management_logger.info("While attempting to borrow a driver: no available drivers in the pool.")
             return None
         
         # Check that the task does not already have a driver. (Or that we havenn't checked one out with the same details.)
         if self._key_already_used(task_id):
-            print("key already in use.")
+            resource_management_logger.info(f"While attempting to borrow a driver: key already in use for task_id: {task_id}.")
             return None
         
         # Update the currrent status of the pool, active tasks, and return
@@ -88,6 +106,9 @@ class DriverPool:
             
             # Add the driver to the active driver mapping
             self.active_drivers[task_id] = driver
+            
+            # Log the borrowing of the driver
+            resource_management_logger.info(f"Driver borrowed for task_id: {task_id}. Active drivers: {len(self.active_drivers)}")
             
             # Return
             return driver
@@ -107,17 +128,24 @@ class DriverPool:
             else:
                 return
             
+        # Log the return of the driver
+        resource_management_logger.info(f"While returning driver for task_id: {task_id}, resetting driver.")
+            
         # Reset the driver if it exists, and put it back in the pool.
         # TODO: This severely impacts performance. This behavior should be improved.
         driver.reset()
         
-        # Otherise, put the driver back in the pool.
+        # Then, put the driver back in the pool.
         try:
             # Attempt to put the driver back in the pool.
             with self.lock:
                 self.pool.put(driver, block=False)
+                
+            # Log the successful return of the driver
+            resource_management_logger.info(f"Driver returned for task_id: {task_id}. Available drivers: {self.pool.qsize()}")
         
         except queue.Full:
+            
             # If the pool is full, destroy the driver.
             driver.destroy()
             
@@ -145,6 +173,9 @@ class DriverPool:
         
         # TODO: Verify that this behavior is actually what we want.
         """
+        
+        # Log the shutdown of the driver pool
+        resource_management_logger.info("Shutting down driver pool, destroying all drivers.")
         
         with self.lock:
             # Forcefully destroy any active drivers.

@@ -2,8 +2,6 @@
 from server.config_utils import Config
 import logging, os
 
-## Create loggers for the application
-
 def _create_logger(name: str, config_key: str) -> logging.Logger:
     """
     Create a logger with the specified name and configuration key.
@@ -18,18 +16,32 @@ def _create_logger(name: str, config_key: str) -> logging.Logger:
         logging.Logger: Configured logger instance.
     """
     logger = logging.getLogger(name)
-    config = Config.get_config(config_key)
+    logger.setLevel(logging.DEBUG)  # Set the logger to DEBUG level
+    config = Config.get_config(['logging_utils', 'loggers', config_key])
+    logdir = Config.get_config(['logging_utils', 'log-dir'])
+    os.makedirs(logdir, exist_ok=True)  # Ensure the log directory exists
+    logger.propagate = False  # Prevent propagation to root logger
+    
+    if config.get('silent', False): 
+        # Create a dummy logger if silent mode is enabled
+        dummy_logger = logging.getLogger('silent_logger')
+        dummy_logger.addHandler(logging.NullHandler())
+        dummy_logger.propagate = False
+        return dummy_logger
     
     for handler in config['file-handlers']:
-        filename = os.path.join(config['log-dir'], handler['filename'])
+        
+        # If not silent, create an actual loggers
+        level = getattr(logging, handler['level'].upper(), logging.DEBUG) # Default to DEBUG if level is not found
+        filename = os.path.join(logdir, handler['filename'])
         file_handler = logging.FileHandler(filename=filename, mode='a+')
-        if config.get('silent', False):
-            file_handler.setLevel(logging.CRITICAL)
-        else:
-            file_handler.setLevel(handler['level'])
+        file_handler.setLevel(level)
         formatter = logging.Formatter(handler['format'])
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
+        
+        # log a quick debug message to indicate the logger is set up
+        logger.debug(f"Logger '{name}' initialized with file handler '{filename}' at level '{handler['level']}'")
     
     return logger
 

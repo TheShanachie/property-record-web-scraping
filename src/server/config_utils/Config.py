@@ -1,5 +1,4 @@
-import yaml
-import os
+import yaml, os, json
 
 class Config:
     """
@@ -23,6 +22,7 @@ class Config:
     TODO: Add an in-memory flag to indicate whether we want to load the configuration in memory or not. Otherwise, we can technically read the configuration directly from the YAML file each time we need it.
     """
     _instance = None
+    _config = None
 
     def __new__(cls):
         """
@@ -34,6 +34,48 @@ class Config:
             cls._config = {}
         return cls._instance
     
+    @classmethod
+    def _resolve_relative_path(cls, path: str) -> str:
+        """
+        Resolve a relative path to an absolute path based on the project root directory.
+        This method assumes that the path starts with './src/server/' and resolves it to an absolute path.
+        
+        Args:
+            path (str): The relative path to resolve.
+        
+        Returns:
+            str: The absolute path resolved from the given relative path.
+        """
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        return os.path.join(project_root, path.lstrip('./'))
+    
+    @classmethod
+    def _resolve_paths_where_possible(cls, config: dict) -> dict:
+        """
+        Recursively resolve relative paths in the configuration dictionary.
+        This method will traverse the dictionary and resolve any string values that are relative paths.
+        Paths that can be resolved must start with a relative path (i.e., not an absolute path). They
+        must start with ./src/server/<...> pattern.
+        Args:
+            config (dict): The configuration dictionary to process.
+        Returns:
+            dict: The configuration dictionary with resolved paths.
+        """
+        def _valid_format(path: str) -> bool:
+            """
+            Check if the path is in a valid format to be resolved.
+            Valid paths must start with ./src/server/<...> pattern.
+            """
+            return path.startswith('./src/server/')
+        
+        for key, value in config.items():
+            if isinstance(value, dict):
+                config[key] = cls._resolve_paths_where_possible(value)
+            elif isinstance(value, str) and _valid_format(value):
+                config[key] = cls._resolve_relative_path(value)
+            # If the value is not a string or dict, we leave it as is.
+        return config
+
     @classmethod
     def initialize(cls, source: str | list | None = None) -> None:
         """
@@ -49,20 +91,26 @@ class Config:
             FileNotFoundError: If the specified file or directory does not exist.
             Exception: If there is an error reading any of the configuration files.
         """
+        
+        # Read and create the dict.
+        cls._instance = cls()  # Ensure we are working with the singleton instance
         if isinstance(source, str):
             if os.path.isdir(source):
-                cls._instance._config = cls._load_config_from_dir(source)
+                cls._config = cls._load_config_from_dir(source)
             elif os.path.isfile(source) and source.endswith('.yaml'):
-                cls._instance._config = cls._load_config_from_file(source)
+                cls._config = cls._load_config_from_file(source)
             else:
                 raise ValueError(f"Invalid source: {source}. It should be a YAML file or a directory containing YAML files.")
         elif isinstance(source, list):
-            cls._instance._config = cls._load_config_from_list(source)
+            cls._config = cls._load_config_from_list(source)
         elif source is None:
             # Default to loading from the 'config' directory
-            cls._instance._config = cls._load_config_from_dir('./server/config')
+            cls._config = {}
         else:
             raise ValueError("Source must be a string (file path), a list of file paths, or None.")
+        
+        # Resolve paths in the configuration
+        cls._config = cls._resolve_paths_where_possible(cls._config)
     
     @classmethod
     def _load_config_from_list(cls, config_list: list) -> dict:
@@ -145,9 +193,9 @@ class Config:
         """
         instance = cls()
         if key is None:
-            return instance._instance._config
+            return instance._config
         else:
-            config = instance._instance._config
+            config = instance._config
             if isinstance(key, str):
                 key = [key]
             for k in key:
