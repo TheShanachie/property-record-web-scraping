@@ -44,11 +44,11 @@ class ResidentialItem(BaseModel):
 
     class Config:
         extra = "forbid"
-        allow_population_by_field_name = True
+        validate_by_name = True
 
 class Residential(BaseModel):
     residential: List[ResidentialItem] = Field(..., alias="Residential")
 
     class Config:
         extra = "forbid"
-        allow_population_by_field_name = True
+        validate_by_name = True

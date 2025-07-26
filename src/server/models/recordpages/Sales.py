@@ -17,7 +17,7 @@ class SalesItem(BaseModel):
 
     class Config:
         extra = "forbid"
-        allow_population_by_field_name = True
+        validate_by_name = True
 
 
 class SalesDetailItem(BaseModel):
@@ -38,7 +38,7 @@ class SalesDetailItem(BaseModel):
 
     class Config:
         extra = "forbid"
-        allow_population_by_field_name = True
+        validate_by_name = True
 
 
 class Sales(BaseModel):
@@ -47,4 +47,4 @@ class Sales(BaseModel):
 
     class Config:
         extra = "forbid"
-        allow_population_by_field_name = True
+        validate_by_name = True

@@ -21,7 +21,7 @@ class ValueItem(BaseModel):
 
     class Config:
         extra = "forbid"
-        allow_population_by_field_name = True
+        validate_by_name = True
 
 
 class Values(BaseModel):
@@ -29,4 +29,4 @@ class Values(BaseModel):
 
     class Config:
         extra = "forbid"
-        allow_population_by_field_name = True
+        validate_by_name = True

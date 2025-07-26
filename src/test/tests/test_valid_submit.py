@@ -1,5 +1,5 @@
 from test.tests.base_test import BaseAPITest
-from server.models import ActionInput, ActionOutput
+from test.test_utilities.logger import test_logger
 
 class TestValidSubmitTask(BaseAPITest):
     """ Test cases for valid task submissions. """

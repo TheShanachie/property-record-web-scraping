@@ -1,7 +1,7 @@
 
 import unittest
 import os
-from test.test_utilities import APIClient
+from test.test_utilities.api_client import APIClient
 from server.models import ActionInput, ActionOutput
 from typing import Tuple, Optional
 
