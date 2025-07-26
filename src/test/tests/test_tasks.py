@@ -1,7 +1,7 @@
 from api_access import get_tasks, get_health
 from jsonschema.exceptions import ValidationError
 import unittest, os, json
-from test.logger import test_logger
+from test.test_utilities.logger import test_logger
 
 API_URL = os.environ.get('API_URL')
 

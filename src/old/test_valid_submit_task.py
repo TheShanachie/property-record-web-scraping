@@ -1,6 +1,6 @@
 from api_access import submit_scrape_job, scrape_job_status, get_tasks, get_health
 import unittest, os, time, json
-from test.logger import test_logger
+from test.test_utilities.logger import test_logger
 
 API_URL = os.environ.get('API_URL')
 
@@ -26,8 +26,8 @@ class TestValidSubmitTask(unittest.TestCase):
         tasks = []
         for address in [
             (103, "Main St", ""),
-            # (102, "Main St", ""),
-            # (103, "Main St", "")
+            (102, "Main St", ""),
+            (103, "Main St", "")
         ]:
             tasks.append({
                 "address": address,
@@ -49,7 +49,6 @@ class TestValidSubmitTask(unittest.TestCase):
         start_time = time.time()
         while True:
             response = scrape_job_status(API_URL, task_id)
-            print(f"Polling task {task_id}: {json.dumps(response, indent=4)}")
             totaltime = time.time() - start_time
             if response["metadata"]['status'] == "completed":
                 test_logger.info(f"Task {task_id} completed in {totaltime:.2f} seconds. Response: {json.dumps(response, indent=4)}")
