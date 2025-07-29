@@ -1,0 +1,14 @@
+
+# Chrome Binary Path
+chrome-path: "./src/server/build/bin/chrome-linux64/chrome" # Path to the Chrome binary
+chrome-driver-path: "./src/server/build/bin/chromedriver-linux64/chromedriver" # Path to the ChromeDriver binary
+chrome-options:
+- "--headless" # Remove this if you want to see the browser during simulation
+- "--no-sandbox"
+experimental-chrome-options:
+  download.default_directory: "./src/server/logs/tempempty/" # Default download directory
+  download.prompt_for_download: false # Disable download prompt
+  download.directory_upgrade: true # Allow directory upgrade
+  download.safebrowsing.enabled: false # Disable safe browsing
+  profile.default_content_setting_values.automatic_downloads: 1 # Allow automatic downloads
+address-search-url: "https://www.ncpub.org/_web/Search/Disclaimer.aspx?FromUrl=../search/commonsearch.aspx?mode=address"

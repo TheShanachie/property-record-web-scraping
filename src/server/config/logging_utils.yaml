@@ -1,0 +1,36 @@
+log-dir: "./src/server/web_scraping_utils/logs/"
+
+# Logger Configuration
+loggers:
+
+  web_scraping_core:
+    silent: false
+    file-handlers:
+      - level: "DEBUG"
+        filename: "web_scraping_core_logger.log"
+        encoding: "utf-8"
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  flask_app_interactions:
+    silent: false
+    file-handlers:
+      - level: "DEBUG"
+        filename: "flask_app_interactions_logger.log"
+        encoding: "utf-8"
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  event_handling_operations:
+    silent: false
+    file-handlers:
+      - level: "DEBUG"
+        filename: "event_handling_operations_logger.log"
+        encoding: "utf-8"
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  resource_management:
+    silent: false
+    file-handlers:
+      - level: "DEBUG"
+        filename: "resource_management_logger.log"
+        encoding: "utf-8"
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

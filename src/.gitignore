@@ -1,11 +1,9 @@
-# Ignore the build directory for selenium chrome.
-build/bin/
+# Include the build directory, but not the intenal build/bin contents
+!server/build/
+server/build/bin/
 
 # Ignore all extra logging files
 *.log
-
-# Ignore the config file.
-*.yaml
 
 # Ingore the old stuff
 old/
