@@ -1,11 +1,11 @@
-# Ignore all bin directories & src directories
-bin/
-src/
+# Ignore the build directory for selenium chrome.
+build/bin/
 
 # Ignore all extra logging files
 *.log
-*.html
-*.xml
 
 # Ignore the config file.
 *.yaml
+
+# Ingore the old stuff
+old/

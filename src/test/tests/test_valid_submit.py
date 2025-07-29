@@ -9,7 +9,7 @@ class TestValidSubmitTask(BaseAPITest):
         
         # Create validated input
         scrape_input = self.create_test_scrape_input(
-            address_num=101,
+            address=(101, "Main St", ""),
             pages=[],
             max_results=1
         )
@@ -47,7 +47,7 @@ class TestValidSubmitTask(BaseAPITest):
         # Submit multiple tasks
         for i in range(3):
             scrape_input = self.create_test_scrape_input(
-                address_num=101 + i,
+                address=(101 + i, "Main St", ""),
                 pages=[],
                 max_results=1
             )
