@@ -19,23 +19,22 @@ class BaseAPITest(unittest.TestCase):
     
     def assertValidResponse(self, response: ActionOutput.OutputModel, expected_status: int = 200):
         """Assert response is valid and has expected status"""
-        self.assertIsInstance(response, ActionOutput.OutputModel)
-        self.assertEqual(response.status_code, expected_status)
-        
+        response = response.model_dump()
+        self.assertEqual(response['status_code'], expected_status)
         if expected_status == 200:
-            self.assertIsNone(response.error)
-            self.assertIsNotNone(response.metadata)
+            self.assertIsNone(response['error'])
         else:
-            self.assertIsNotNone(response.error)
-    
+            self.assertIsNotNone(response['error'])
+
     def assertTaskCompleted(self, response: ActionOutput.OutputModel):
         """Assert task has completed successfully"""
+        response = response.model_dump()
         self.assertValidResponse(response, 200)
-        self.assertEqual(response.metadata.status, "completed")
-        self.assertIsNotNone(response.metadata.result)
-        self.assertIsNotNone(response.metadata.finished_at)
-    
-    def create_test_scrape_input(self, address: Tuple[int, str, str], pages: list = [], max_results: int = 1) -> ActionInput.Scrape:
+        self.assertEqual(response['metadata']['status'], "completed")
+        self.assertIsNotNone(response['metadata']['result'])
+        self.assertIsNotNone(response['metadata']['finished_at'])
+
+    def create_test_scrape_input(self, address: Tuple[int, str, str], pages: list = [], num_results: int = 1) -> ActionInput.Scrape:
         """Create a valid test scrape input"""
         if pages is None:
             pages = []
@@ -43,7 +42,7 @@ class BaseAPITest(unittest.TestCase):
         return ActionInput.Scrape(
             address=address,
             pages=pages,
-            max_results=max_results
+            num_results=num_results
         )
     
     def poll_until_complete(self, task_id: str, timeout: int = 300, poll_interval: int = 5) -> ActionOutput.OutputModel:
@@ -54,8 +53,8 @@ class BaseAPITest(unittest.TestCase):
         while time.time() - start_time < timeout:
             response = self.client.get_task_status(task_id)
             self.assertValidResponse(response, 200)
-            
-            if response.metadata.status in ["completed", "failed", "cancelled"]:
+
+            if response['metadata']['status'] in ["completed", "failed", "cancelled"]:
                 return response
             
             time.sleep(poll_interval)

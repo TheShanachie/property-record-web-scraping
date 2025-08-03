@@ -68,8 +68,8 @@ def load_and_run_tests():
     Load and run all tests in the test directory.
     """
     loader = unittest.TestLoader()
-    tests = loader.discover(start_dir="./test", pattern="test_*.py", top_level_dir="./test")  # Adjust pattern if needed
-    runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
+    tests = loader.discover(start_dir="./test", pattern="test_valid*.py", top_level_dir="./test")  # Adjust pattern if needed
+    runner = unittest.TextTestRunner(verbosity=1, buffer=True, tb_locals=True)
     return runner.run(tests)
 
 

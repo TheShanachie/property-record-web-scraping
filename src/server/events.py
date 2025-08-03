@@ -56,6 +56,9 @@ class EventsHandler():
                 num_results=num_results
             )
             
+            # Print the metadata id that was created
+            print(f"DEBUG: Created task with ID: {metadata.id}")
+            
             # Return the metadata object for the scrape task
             return ActionOutput.Scrape(metadata=metadata,
                                        error=None, 
@@ -93,6 +96,17 @@ class EventsHandler():
                                     error=None, 
                                     status_code=200)
         except Exception as e:
+            
+            # Print all error detais and traceback for debugging
+            print()
+            print(f"Error occurred while getting task status: {e}")
+            print("Task IDs are as follows:")
+            tasks = self._task_manager.get_all_tasks()
+            for task in tasks:
+                print(f"    Task ID: {task.id}, Status: {task.status}")
+            print(traceback.format_exc())
+            print()
+            
             # Handle the exception and return an error response
             return ActionOutput.Status(metadata=None, 
                                        error=e, 

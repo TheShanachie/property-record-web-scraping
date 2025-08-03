@@ -78,16 +78,16 @@ def log_flask_endpoint_io(logger):
 def scrape():
     """
         This function handles the submission of a scraping task. It validates the input data, extracts the necessary parameters, and posts the task to the TaskManager. If successful, it returns the metadata of the task. If there is a validation error, it returns a 400 status code with the error message. If there is any other error, it returns a 500 status code with the error message
-
+``
         :return: JSON response containing the task metadata and error data
         :rtype: tuple[str, int]
     """
     try:
         handler = get_events_handler()
-        ActionInput.Scrape.model_validate(request.json)  # Validate the input data
-        data = ActionInput.Scrape(**request.json)
-        ActionInput.Scrape.model_validate(data)  # Validate the input data
+        data = ActionInput.Scrape.model_validate(request.json)
         result = handler.scrape(data)
+        # Print the metadata id that was created
+        print(f"DEBUG: In scrape route, Created task with ID: {result.metadata.id}")
         return result.json_dump()
 
     except ValidationError as ve:
@@ -235,7 +235,7 @@ def tasks():
         handler = get_events_handler()
 
         # Retrieve all tasks from the TaskManager
-        tasks = handler.get_all_tasks()
+        tasks = handler.tasks()
 
         # Return the tasks as a JSON response
         return tasks.json_dump()

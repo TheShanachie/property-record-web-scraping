@@ -16,7 +16,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
     
 # Import the main server application, create it, then expise it.
-from .app import _create_app
+from server.app import _create_app
 app = _create_app()
 
 # Expose the app for use in other modules

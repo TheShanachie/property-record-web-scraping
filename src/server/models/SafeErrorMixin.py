@@ -20,7 +20,25 @@ class ExceptionInfo(BaseModel):
             file=tb.tb_frame.f_code.co_filename if tb else None,
             line=tb.tb_lineno if tb else None,
             trace=trace_str
-            )
+        )
+
+    def format_details(self) -> str:
+        """Return a nicely formatted string of the exception details."""
+        details = [
+            f"Type   : {self.type}",
+            f"Message: {self.message}",
+            f"File   : {self.file}" if self.file else "File   : <unknown>",
+            f"Line   : {self.line}" if self.line else "Line   : <unknown>",
+            "Traceback:",
+            f"{self.trace.strip()}" if self.trace else "  <no traceback available>"
+        ]
+        return "\n    ".join(details)
+
+    def __str__(self) -> str:
+        return self.format_details()
+
+    def __repr__(self) -> str:
+        return self.format_details()
 
 class SafeErrorMixin(BaseModel):
     """ Mixin for Error Field """

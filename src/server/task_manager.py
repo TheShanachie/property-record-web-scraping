@@ -586,14 +586,15 @@ class TaskManager:
                 if not task_data:
                     raise RuntimeError(f"Task with ID '{task_id}' does not exist. Could not execute the scrape task.")
                 
-                # Update the task status to running.
-                task_data.status = Status.RUNNING
-                task_data.started_at = datetime.now()
-            
             # Get a driver from the pool and execute the scrape_address function.
             driver = self._poll_for_driver(task_id=task_id,
                                            interval=10,
                                            timeout=None)
+            
+            # Update the task data information
+            with self._lock:
+                task_data.status = Status.RUNNING
+                task_data.started_at = datetime.now()
                 
             # Once we have a driver, we can execute the scrape_address function.
             results = driver.address_search(
@@ -792,9 +793,10 @@ class TaskManager:
         
         with self._lock:
             task_result = self._tasks.get(task_id, None)
-            if not task_result: 
-                raise RuntimeError(f"No task was found for task_id: {task_id}")
-            return task_result
+            if isinstance(task_result, Metadata):
+                # If the task is found, return the metadata object.
+                return task_result
+            raise RuntimeError(f"No task was found for task_id: {task_id}")
 
     def get_task_result(self, task_id: str) -> Metadata | None:
         """

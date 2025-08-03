@@ -14,7 +14,8 @@ def _create_test_logger(name: str, level: int = logging.DEBUG) -> logging.Logger
     ch.setLevel(level)
     
     # Create formatter and add it to the handler
-    formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s: %(message)s')
+    fmt = '%(name)s | %(asctime)s | file="%(filename)s", func="%(funcName)s", line="%(lineno)d" | %(levelname)s: %(message)s'
+    formatter = logging.Formatter(fmt)
     ch.setFormatter(formatter)
     
     # Add the handler to the logger

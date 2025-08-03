@@ -1,6 +1,7 @@
 from typing import Tuple, Optional, Type
 from pydantic import BaseModel, ValidationError
 from server.models import ActionInput, ActionOutput
+from .logger import test_logger
 import requests
 import json
 
@@ -21,6 +22,8 @@ class APIClient:
         else:
             raise ValueError(f"Unsupported method: {method}")
         
+        test_logger.debug(f"Made API request with url: {url} and data: {json.dumps(data, indent=2) if data is not None else ''} response: {json.dumps(response.json(), indent=2)}")
+
         try:
             response_data = response.json()
         except:
@@ -45,93 +48,47 @@ class APIClient:
             return False
         
     
-    def submit_scrape_job(self, scrape_input: ActionInput.Scrape, validate_input: bool = False) -> ActionOutput.OutputModel:
+    def submit_scrape_job(self, scrape_input: dict) -> ActionOutput.Scrape:
         """ Submit scrape job with input validation. Do not raise an error if the input validation fails, instead assert the response status code is in the 400s. """
-    
-        # Validate input model
-        if validate_input:
-            validated_input = ActionInput.Scrape.model_validate(scrape_input.model_dump())
-
+            
         # Make request
-        response_data, status_code = self._make_request(
-            'POST', 
-            '/scrape', 
-            validated_input.model_dump()
+        response, _ = self._make_request(
+            method='POST', 
+            endpoint='/scrape', 
+            data=scrape_input
         )
-        
-        # Create and validate output model
-        output = ActionOutput.OutputModel(
-            metadata=response_data.get('metadata'),
-            error=response_data.get('error'),
-            status_code=status_code
-        )
-        
-        return output
+        test_logger.debug(f"Submitted scrape job with data: {json.dumps(scrape_input, indent=2)} - response: {json.dumps(response, indent=2)}")
+        return ActionOutput.Scrape.model_validate(response)
     
-    def get_task_status(self, task_id: str) -> ActionOutput.OutputModel:
+    
+    def get_task_status(self, task_id: str) -> ActionOutput.Status:
         """Get task status with validation"""
-        
-        # Validate input
-        status_input = ActionInput.Status(task_id=task_id)
-        
-        # Make request
-        response_data, status_code = self._make_request(
+        response, _ = self._make_request(
             'GET', 
             f'/task/{task_id}/status'
         )
-        
-        # Create and validate output model
-        output = ActionOutput.OutputModel(
-            metadata=response_data.get('metadata'),
-            error=response_data.get('error'),
-            status_code=status_code
-        )
-        
-        return output
+        test_logger.debug(f"Got task status for task {task_id} - response: {json.dumps(response, indent=2)}")
+        return ActionOutput.Status.model_validate(response)
     
-    def get_health(self) -> ActionOutput.OutputModel:
+    
+    def get_health(self) -> ActionOutput.Health:
         """Get health status with validation"""
-        response_data, status_code = self._make_request('GET', '/health')
-        
-        # Create and validate output model
-        output = ActionOutput.OutputModel(
-            metadata=response_data.get('metadata'),
-            error=response_data.get('error'),
-            status_code=status_code
-        )
-        
-        return output
+        response_data, _ = self._make_request('GET', '/health')
+        return ActionOutput.Health.model_validate(response_data)
     
-    def get_task_result(self, task_id: str) -> ActionOutput.OutputModel:
+    
+    def get_tasks(self) -> ActionOutput.Tasks:
+        """Get list of tasks with validation"""
+        response_data, _ = self._make_request('GET', '/tasks')
+        return ActionOutput.Tasks.model_validate(response_data)
+    
+    
+    def get_task_result(self, task_id: str) -> ActionOutput.Result:
         """Get task result with validation"""
-        result_input = ActionInput.Result(task_id=task_id)
         
-        response_data, status_code = self._make_request(
+        response, _ = self._make_request(
             'GET', 
             f'/task/{task_id}/result'
         )
-        
-        output = ActionOutput.OutputModel(
-            metadata=response_data.get('metadata'),
-            error=response_data.get('error'),
-            status_code=status_code
-        )
-        
-        return output
-    
-    def wait_for_task(self, task_id: str) -> ActionOutput.OutputModel:
-        """Wait for task completion with validation"""
-        wait_input = ActionInput.Wait(task_id=task_id)
-        
-        response_data, status_code = self._make_request(
-            'GET', 
-            f'/task/{task_id}/wait'
-        )
-        
-        output = ActionOutput.OutputModel(
-            metadata=response_data.get('metadata'),
-            error=response_data.get('error'),
-            status_code=status_code
-        )
-        
-        return output
+        test_logger.debug(f"Getting task result for ID: {task_id} - response: {json.dumps(response, indent=2)}")
+        return ActionOutput.Result.model_validate(response)

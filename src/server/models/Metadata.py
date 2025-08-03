@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict, computed_field, field_serializer, field_validator
+from pydantic import BaseModel, Field, ConfigDict, NonNegativeInt, field_validator
 from typing import Optional, List, Tuple, Union
 from uuid import uuid4
 from enum import Enum
@@ -34,7 +34,7 @@ class Metadata(SafeErrorMixin, BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     # General Information
-    id: str = Field(default_factory=lambda: uuid4().hex, alias="task_id", description="Unique identifier for the task")
+    id: Optional[str] = Field(default=None, description="Unique identifier for the task")
     
     # Timestamp Data
     created_at: Union[str, datetime] = Field(default_factory=lambda: datetime.now(), description="Creation timestamp")
@@ -46,18 +46,24 @@ class Metadata(SafeErrorMixin, BaseModel):
     status_code: int = Field(200, description='HTTP status code representing the task status')
     
     # Input Data
-    address: Tuple[int, str, str] = Field(..., description="Tuple containing number, street, and city")
+    address: Tuple[NonNegativeInt, str, str] = Field(..., description="Tuple containing number, street, and city")
     pages: List[str] = Field(..., description="List of pages to scrape")
-    num_results: int = Field(..., description="Number of results to return from the scrape", ge=1, le=10)
+    num_results: NonNegativeInt = Field(..., description="Number of results to return from the scrape", ge=1, le=10)
     
     # Result
-    result: List[Record] = Field(None, description="The result data from a webscraping job.")
-    
+    result: Optional[List[Record]] = Field(None, description="The result data from a webscraping job.")
+
     # Error Data
     error_code: Optional[int] = Field(None, description="Error code if the task failed")
     error_message: Optional[str] = Field(None, description="Error message if appropriate")
 
-    
+    # Validation to ensure ID is generated if not provided, otherwise maintained.
+    @field_validator('id', mode='before')
+    @classmethod
+    def generate_id_if_none(cls, v):
+        if v is None:
+            return uuid4().hex
+        return v
     
     
     

@@ -1,5 +1,6 @@
 from test.tests.base_test import BaseAPITest
 from test.test_utilities.logger import test_logger
+from pydantic import BaseModel
 
 
 class TestInvalidSubmitTask(BaseAPITest):
@@ -8,11 +9,13 @@ class TestInvalidSubmitTask(BaseAPITest):
     This class extends BaseAPITest to leverage common test setup and validation methods.
     """
     
-    def _assert_response_status(self, response: dict, expected_status: int):
+    def _assert_response_status(self, response: dict | BaseModel, expected_status: int):
         """
         Helper method to assert the response status code.
         """
-        self.assertIsInstance(response, dict)
+        if isinstance(response, BaseModel):
+            response = response.model_dump()
+        self.assertIsInstance(response, (dict, BaseModel))
         self.assertIn('status_code', response)
         self.assertEqual(response['status_code'], expected_status)
         
@@ -27,7 +30,7 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [],
-                "max_results": 1,
+                "num_results": 1,
                 "extra_field": "This should not be here"
             }), 400
         )
@@ -45,13 +48,13 @@ class TestInvalidSubmitTask(BaseAPITest):
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
@@ -63,7 +66,7 @@ class TestInvalidSubmitTask(BaseAPITest):
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
-                "max_results": 1
+                "num_results": 1
             }), 400
         ) 
         
@@ -77,21 +80,21 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": "101 Main St",
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": 101,
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": {"number": 101, "street": "Main St", "dir": ""},
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
 
@@ -100,30 +103,30 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": 101,
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": "This should be a list",
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
 
-        # Invalid max_results type
+        # Invalid num_results type
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [],
-                "max_results": "This should be an int"
+                "num_results": "This should be an int"
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [],
-                "max_results": ("This should be an int", 1)
+                "num_results": ("This should be an int", 1)
             }), 400
         )
             
@@ -138,21 +141,21 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": ("101", "Main St", ""),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 200  # Pydantic will coerce str to int if possible
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101.5, "Main St", ""),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (-101, "Main St", ""),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
 
@@ -161,7 +164,7 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": (101, 123, ""),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
 
@@ -170,14 +173,14 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ()),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", 123),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         
@@ -186,21 +189,21 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": (101, "Main St"),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", "", "Extra value"),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (),
                 "pages": [],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         
@@ -214,21 +217,21 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": "This should be a list",
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": 123,
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": None,
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
 
@@ -237,55 +240,55 @@ class TestInvalidSubmitTask(BaseAPITest):
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [123],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [None],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [{"page": 1}],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": ["owner"],
-                "max_results": 1
+                "num_results": 1
             }), 400
         )
         
-    def test_invalid_max_results(self):
+    def test_invalid_num_results(self):
         """
-        Test for invalid max_results in task submission.
+        Test for invalid num_results in task submission.
         """
         
-        # Invalid max_results type
+        # Invalid num_results type
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [],
-                "max_results": "This should be an int"
+                "num_results": "This should be an int"
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [],
-                "max_results": 1.5
+                "num_results": 1.5
             }), 400
         )
         self._assert_response_status(
             self.client.submit_scrape_job({
                 "address": (101, "Main St", ""),
                 "pages": [],
-                "max_results": -1
+                "num_results": -1
             }), 400
         )

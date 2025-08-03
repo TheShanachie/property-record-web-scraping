@@ -1,6 +1,6 @@
 from .Metadata import Metadata
 from typing import Optional, List, Dict, Tuple
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, NonNegativeInt
 from uuid import uuid4
 from enum import Enum
 
@@ -17,10 +17,10 @@ class InputModel(BaseModel):
     
 class Scrape(InputModel):
     """Model for scrape input data."""
-    address: Tuple[int, str, str] = Field(..., description="Tuple containing number, street, and city")
+    address: Tuple[NonNegativeInt, str, str] = Field(..., description="Tuple containing number, street, and city")
     pages: List[str] = Field(..., description="List of pages to scrape")
-    num_results: int = Field(..., alias="max_results", description="Number of results to return from the scrape", ge=1, le=10)
-    
+    num_results: NonNegativeInt = Field(..., description="Number of results to return from the scrape", ge=1, le=10)
+
     @field_validator('pages', mode='after')
     @classmethod
     def validate_pages(cls, v):
