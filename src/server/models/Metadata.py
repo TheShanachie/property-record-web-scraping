@@ -15,6 +15,7 @@ class Status(str, Enum):
     FAILED = "failed"
     STOPPING = "stopping"
     CANCELLED = "cancelled"
+    KILLED = "killed"
     
 class TaskType(str, Enum):
     """Enumeration for task type"""
@@ -34,7 +35,7 @@ class Metadata(SafeErrorMixin, BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     # General Information
-    id: Optional[str] = Field(default=None, description="Unique identifier for the task")
+    id: str = Field(default_factory=lambda: uuid4().hex, description="Unique identifier for the task")
     
     # Timestamp Data
     created_at: Union[str, datetime] = Field(default_factory=lambda: datetime.now(), description="Creation timestamp")
@@ -56,14 +57,6 @@ class Metadata(SafeErrorMixin, BaseModel):
     # Error Data
     error_code: Optional[int] = Field(None, description="Error code if the task failed")
     error_message: Optional[str] = Field(None, description="Error message if appropriate")
-
-    # Validation to ensure ID is generated if not provided, otherwise maintained.
-    @field_validator('id', mode='before')
-    @classmethod
-    def generate_id_if_none(cls, v):
-        if v is None:
-            return uuid4().hex
-        return v
     
     
     

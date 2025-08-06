@@ -178,7 +178,7 @@ class DriverPool:
         resource_management_logger.info("Shutting down driver pool, destroying all drivers.")
         
         with self.lock:
-            # Forcefully destroy any active drivers.
+            # Forcefully destroy any drivers, active or not.
             values = self.active_drivers.values()
             self.active_drivers.clear()
             while values:

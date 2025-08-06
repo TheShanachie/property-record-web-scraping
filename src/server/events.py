@@ -56,9 +56,6 @@ class EventsHandler():
                 num_results=num_results
             )
             
-            # Print the metadata id that was created
-            print(f"DEBUG: Created task with ID: {metadata.id}")
-            
             # Return the metadata object for the scrape task
             return ActionOutput.Scrape(metadata=metadata,
                                        error=None, 

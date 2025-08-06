@@ -42,22 +42,6 @@ def _setup_events_handler():
     
     return events_handler
 
-def _setup_process_cleanup(app):
-    """
-    Initialize and configure process cleanup manager.
-    
-    Args:
-        app (Flask): Flask application instance
-    """
-    # Handle subprocess cleanup too
-    cleanup_mgr = ProcessCleanupManager(api_url=app.config["BASE_URL"])
-    app.config["CLEANUP_MANAGER"] = cleanup_mgr
-    
-    # Register cleanup immediately during app creation
-    main_pid = os.getpid()
-    with app.app_context():
-        cleanup_mgr.register_cleanup(main_pid=main_pid)
-
 def _override_run_method(app):
     """
     Override the Flask app's run method to use config defaults.
@@ -70,6 +54,16 @@ def _override_run_method(app):
     
     def custom_run(host=None, port=None, debug=None, **options):
         """Override run method to use config defaults"""
+        
+        # Handle subprocess cleanup too
+        cleanup_mgr = ProcessCleanupManager(api_url=app.config["BASE_URL"])
+        app.config["CLEANUP_MANAGER"] = cleanup_mgr
+        
+        # Register cleanup immediately during app creation
+        with app.app_context():
+            main_pid = os.getpid()
+            cleanup_mgr.register_cleanup(main_pid=main_pid)
+        
         # Use config values as defaults if not provided
         host = host or app.config.get("HOST", "127.0.0.1")
         port = port or app.config.get("PORT", 5000)
@@ -102,13 +96,10 @@ def _create_app():
     # Setup events handler
     _setup_events_handler()
     
-    # Setup process cleanup
-    _setup_process_cleanup(app)
+    # Register blueprints
+    _register_blueprints(app)
     
     # Override run method to use config defaults
     _override_run_method(app)
-    
-    # Register blueprints
-    _register_blueprints(app)
 
     return app

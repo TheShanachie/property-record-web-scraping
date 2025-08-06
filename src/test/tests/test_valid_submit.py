@@ -38,35 +38,35 @@ class TestValidSubmitTask(BaseAPITest):
         self.assertTaskCompleted(final_response)
         
         # Validate result structure
-        self.assertIsInstance(final_response.metadata.result, list)
-        self.assertGreater(len(final_response.metadata.result), 0)
+        self.assertIsInstance(final_response['metadata']['result'], list)
+        self.assertGreater(len(final_response['metadata']['result']), 0)
         
         # Validate each result item
-        for result_item in final_response.metadata.result:
+        for result_item in final_response['metadata']['result']:
             self.assertIn('heading', result_item)
-            self.assertIn('page-data', result_item)
+            self.assertIn('page_data', result_item)
     
-    # def test_multiple_tasks_concurrent(self):
-    #     """Test multiple tasks with model validation"""
+    def test_multiple_tasks_concurrent(self):
+        """Test multiple tasks with model validation"""
         
-    #     tasks = []
-    #     task_ids = []
+        tasks = []
+        task_ids = []
         
-    #     # Submit multiple tasks
-    #     for i in range(3):
-    #         scrape_input = self.create_test_scrape_input(
-    #             address=(101 + i, "Main St", ""),
-    #             pages=[],
-    #             num_results=1
-    #         )
+        # Submit multiple tasks
+        for i in range(3):
+            scrape_input = self.create_test_scrape_input(
+                address=(101 + i, "Main St", ""),
+                pages=[],
+                num_results=1
+            )
             
-    #         response = self.client.submit_scrape_job(scrape_input.model_dump())
-    #         self.assertValidResponse(response, 200)
+            response = self.client.submit_scrape_job(scrape_input.model_dump())
+            self.assertValidResponse(response, 200)
             
-    #         tasks.append(response)
-    #         task_ids.append(response.metadata.id)
+            tasks.append(response)
+            task_ids.append(response.metadata.id)
         
-    #     # Poll all tasks to completion
-    #     for task_id in task_ids:
-    #         final_response = self.poll_until_complete(task_id)
-    #         self.assertTaskCompleted(final_response)
+        # Poll all tasks to completion
+        for task_id in task_ids:
+            final_response = self.poll_until_complete(task_id)
+            self.assertTaskCompleted(final_response)

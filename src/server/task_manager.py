@@ -11,7 +11,7 @@ import time, json
 
 # TODO: Error handling for tasks which don't exist.
 # TODO: When a task fails, how do we remove it from the futures.
-
+# TODO: The task should NEVER be updated if the status is in {COMPLETED, FAILED, CANCELLED}.
 
 class TaskManager:
     """
@@ -63,12 +63,49 @@ class TaskManager:
             A dictionary containing the driver pool information.
         """
         return self._driver_pool.stats()
+    
+    def _log_task_manager_state(self):
+            """ Log the current state of the TaskManager """
+            state = {
+                "max_workers": self._max_workers,
+                "max_drivers": self._max_drivers,
+                "cleanup_interval": self._cleanup_interval,
+                "active_tasks": len(self._tasks),
+                "active_futures": len(self._futures),
+                "driver_pool_info": self.driver_pool_info()
+            }
+            event_handling_operations_logger.debug(f"TaskManager state: {json.dumps(state, indent=2)}")
+            return state
+        
+    def _cleanup_non_active_drivers(self) -> None:  
+        """ Cleanup the non-active drivers in the driver pool. """
+        pass
+    
+    def _cleanup_non_active_futures(self) -> None:
+        """ Cleanup the non-active futures for tasks in the thread pool. """
+        pass
+             
+    def _cleanup_completed_tasks(self) -> None:
+        """ Background thread to cleanup old completed tasks """
+        # TODO: Right now, we do not clear completed tasks, leaving the internal mapping full and growing.
+        pass
         
     def shutdown(self):
         """
         Shutdown the TaskManager, cleaning up resources and stopping the cleanup thread.
         # TODO: No good. This needs to be modeled after the class is fixed.
         """
+        
+        # 1. Cancel all running tasks.
+        
+        # 2. Wait for these tasks to finish.
+        
+        # 3. Shutdown and destroy the thread pool executer.
+        
+        # 4. Destroy all drivers / shutdown the internal driver pool.
+        
+        # 5. Shutdown and destroy any peripheral threads.
+        
         pass
 
     def _task_exists(self, task_id: str) -> bool:
@@ -108,6 +145,53 @@ class TaskManager:
                     return task_id
             return None
         
+    def _is_done(self, task_id: str) -> bool:
+        """ Check if the task is in a finished state. If this is ever true, the respective state details should no longer be modified."""
+        return self._task_status(task_id) in {Status.COMPLETED, Status.FAILED, Status.CANCELLED, Status.KILLED}
+        
+    def _kill_task(self, task_id: str):
+        """
+        This task updates appropriate state to 'kill' a task. This is different from cancelling a task, where we wait for appropriate portions of
+        the task to finish and cleanup resources. This method will forcefully update an separate the task from any resources and future, where the only final
+        information is whatever task data is available at the time of killing. This does not stop any resources or peripheral processes. The other
+        processes must be stopped externally. 
+        
+        Args:
+            task_id: Unique identifier for the task
+        """
+        try:
+            with self._lock:
+                # Get relevant task data assert that the data exists.
+                task = self._tasks.get(task_id, None) # Get the task data.
+                assert task is not None, f"Task with ID '{task_id}' does not exist."
+                
+                # If the task is in a finished state, we do nothing.
+                if task.status in {Status.COMPLETED, Status.FAILED, Status.CANCELLED, Status.KILLED}:
+                    pass # Task is already finished, nothing to kill.
+                
+                # If the task is already stopping, then we update the metadata.
+                elif task.status == Status.STOPPING:
+                    task.status = Status.KILLED
+                    task.finished_at = datetime.now()
+                
+                # If the task is not stopping, then we update the future with the metadata, hopefully stopping the future early.
+                else: # The task is running or set to run.
+                    future_data = self._futures.get(task_id, None)
+                    assert future_data is not None, f"Future data for task_id '{task_id}' is missing while task is running."
+                    future_data[1].set()  # Stop the future early.
+                    task.status = Status.KILLED
+                    task.finished_at = datetime.now()
+                    
+        except Exception as e:
+            
+            # Log the error during task killing
+            event_handling_operations_logger.error(
+                f"Error while attempting to kill task with ID '{task_id}': {e}", exc_info=True
+            )
+            
+            # If there is an error, we raise a RuntimeError with the error message.
+            raise RuntimeError(f"Error while attempting to kill task with ID '{task_id}': {e}") from e
+        
     def _cancel_task(self, task_id: str):
         """ 
         Cancel a task and perform appropriate state changes. This function does not immediatly stop a task. Instead, it 
@@ -124,7 +208,8 @@ class TaskManager:
             
         Raises:
             RuntimeError: If there is an error attempting to cancel this task.
-        """
+        """               
+        
         try: # Attempt to cancel the task.
             with self._lock:
                 # Get relevant task data assert that the data exists.
@@ -135,7 +220,7 @@ class TaskManager:
                 assert task is not None, f"Task with ID '{task_id}' does not exist." 
                 
                 # Check that the task is in a finished state.
-                if task.status in {Status.COMPLETED, Status.FAILED, Status.CANCELLED}:
+                if task.status in {Status.COMPLETED, Status.FAILED, Status.CANCELLED, Status.KILLED}:
                     
                     # Log this event
                     event_handling_operations_logger.debug(
@@ -340,6 +425,24 @@ class TaskManager:
                     f"Task with ID '{task_id}' was cancelled before running."
                 )
                 
+        def _finished_with_killed(future: Future, task_id: str) -> None:
+            """
+            Handle the case where a task was killed. This method assumes that the task was forcefully
+            killed and no result is available.
+            
+            Args:
+                future: The Future object representing the completed task.
+                task_id: The unique identifier for the task.
+                
+            Raises:
+                AssertionError: If the future is not done, if the task_id or task metadata cannot be found, or the task was not killed.
+            """
+            with self._lock: 
+                task_metadata = self._tasks.get(task_id, None)
+                assert task_metadata is not None, f"Task metadata not found for task_id: {task_id}."
+                assert task_metadata.status == Status.KILLED, f"Task with ID '{task_id}' was not killed."
+    
+                
         def _verify_driver_is_returned(task_id: str) -> None:
             """
             Verify that the driver is returned to the pool after task completion.
@@ -352,8 +455,6 @@ class TaskManager:
             Raises:
                 AssertionError: If the driver is not returned to the pool.
             """
-            
-            # TODO: Implement this method to verify that the driver is returned to the pool.
             in_use = self._driver_pool._key_already_used(task_id)
             assert not in_use, f"Driver for task_id '{task_id}' exists in the active drivers mapping, but should have been returned to the pool."
             
@@ -368,10 +469,11 @@ class TaskManager:
             conditions are not met.
             
             There are several possible outcomes for a finished future:
-            1. The future was cancelled before running. (no result)
-            2. The future completed successfully. (result is available)
-            3. The future completed with an exception. (no result)
-            4. The future completed early due to a quit/cancel event. (result is available)
+            1. The task was killed. (no result)
+            2. The future was cancelled before running. (no result)
+            3. The future completed successfully. (result is available)
+            4. The future completed with an exception. (no result)
+            5. The future completed early due to a quit/cancel event. (result is available)
             Args:
                 future: The Future object representing the completed task.
                 
@@ -398,8 +500,17 @@ class TaskManager:
                 
                     # Address the possible outcomes for the task.
                     
-                    # 1. The future was cancelled before running. (no result)
-                    if future.cancelled(): # The future was cancelled before running.
+                    # 1. The task was killed. (no result)
+                    if task_metadata.status == Status.KILLED: # The task was killed.
+                        _finished_with_killed(future, task_id)
+                        
+                        # Log the behavior.
+                        event_handling_operations_logger.debug(
+                            f"Callback finalizing for task with ID '{task_id}'. The task was killed."
+                        )
+                    
+                    # 2. The future was cancelled before running. (no result)
+                    elif future.cancelled(): # The future was cancelled before running.
                         _finish_with_cancelled(future, task_id)
                         
                         # Log the behavior.
@@ -407,7 +518,7 @@ class TaskManager:
                             f"Callback finalizing for task with ID '{task_id}'. The future was cancelled before running."
                         )
                         
-                    # 2. The future completed with an exception. (no result)
+                    # 3. The future completed with an exception. (no result)
                     elif future.exception() is not None: # The future completed with an exception.
                         _finish_with_error(future, task_id)
                         
@@ -416,7 +527,7 @@ class TaskManager:
                             f"Callback finalizing for task with ID '{task_id}'. The future completed with an exception: {future.exception()}"
                         )
                         
-                    # 3. The future completed early due to a quit/cancel event. (result is available)
+                    # 4. The future completed early due to a quit/cancel event. (result is available)
                     elif future.done() and self._futures.get(task_id, None)[1].is_set():
                         _finish_with_quit(future, task_id)
                         
@@ -425,7 +536,7 @@ class TaskManager:
                             f"Callback finalizing for task with ID '{task_id}'. The future completed early due to a quit event with result: {task_metadata.result.__sizeof__() if task_metadata.result else 'None'} bytes."
                         )
                         
-                    # 4. The future completed successfully. (result is available)
+                    # 5. The future completed successfully. (result is available)
                     else:
                         _finish_successfully(future, task_id)
                         
@@ -454,14 +565,6 @@ class TaskManager:
         
         # Return the callback function which we just defined.        
         return _task_finished_callback
-        
-             
-
-    def _cleanup_completed_tasks(self) -> None:
-        """ Background thread to cleanup old completed tasks """
-        # TODO: There's a very good chance this function is trash
-        # TODO: THIS FUNCTION IS TRASH, IT NEEDS TO BE REFACTORED.
-        pass
             
                 
     def get_all_tasks(self, statuses: Set[Status] = None) -> List[Metadata]:

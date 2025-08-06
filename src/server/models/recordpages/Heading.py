@@ -6,8 +6,8 @@ class Heading(BaseModel):
     """Property heading information with owner and address details."""
     
     parid: Optional[str] = Field(alias="PARID")
-    owner: Optional[str] = Field(alias="Owner")
-    address: Optional[str] = Field(alias="Address")
+    owner: Optional[str] = Field(alias="OWNER")
+    address: Optional[str] = Field(alias="ADDRESS")
 
     @field_validator('*', mode='before')
     @classmethod

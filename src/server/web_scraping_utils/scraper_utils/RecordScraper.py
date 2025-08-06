@@ -242,7 +242,7 @@ def parse_record(driver: WebDriver, pages: list) -> dict:
         dict: A dictionary containing the record data with the following structure:
             {
                 "heading": str,  # The heading of the record
-                "page-data": {
+                "page_data": {
                     page: dict  # Data collected from each page
                 }
             }
@@ -250,15 +250,15 @@ def parse_record(driver: WebDriver, pages: list) -> dict:
     """
     try: 
         # Record to fill
-        record = {"heading": get_record_heading(driver), "page-data": {}}
+        record = {"heading": get_record_heading(driver), "page_data": {}}
 
         # For each page, collect the data
         for page in pages:
             go_to_record_page(driver, page)
             if page == "Photos":
-                record["page-data"][page] = scrape_photo_page(driver)
+                record["page_data"][page] = scrape_photo_page(driver)
             else:
-                record["page-data"][page] = parse_record_tables(driver)
+                record["page_data"][page] = parse_record_tables(driver)
 
         # Return the record
         return record

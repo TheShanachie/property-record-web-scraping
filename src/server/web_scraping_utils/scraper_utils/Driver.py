@@ -292,5 +292,7 @@ class Driver:
     def destroy(self):
         try:
             self.driver.quit()
-        except: 
-            return
+            web_scraping_core_logger.info(msg=f"Driver instance {self.id} destroyed successfully.")
+        except Exception as e:
+            web_scraping_core_logger.error(msg=f"Error destroying driver instance {self.id}: {e}")
+            raise Exception(f"Error destroying Driver Instance {self.id}") from e
