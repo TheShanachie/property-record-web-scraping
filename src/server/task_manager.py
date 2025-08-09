@@ -27,6 +27,7 @@ class TaskManager:
             self._executer = ThreadPoolExecutor(max_workers=max_workers)
             self._tasks: Dict[str, Metadata] = {}
             self._futures: Dict[str, (Future, threading.Event)] = {}
+            self._trash_futures: List[Future] = [] # Old Futures which should be destroyed when possible
             self._lock = threading.RLock()  # Use RLock to allow reentrant locking
 
             # Start the cleanup thread
@@ -54,6 +55,14 @@ class TaskManager:
 
             # Simply raise the error to the next scope.
             raise RuntimeError(f"Failed to initialize TaskManager: {e}") from e
+        
+    
+    def _update_task(self, task_id: str):
+        pass
+    
+    def _finish_task(self, task_id: str):
+        """ """
+        pass
         
     def driver_pool_info(self) -> dict:
         """
@@ -97,6 +106,19 @@ class TaskManager:
         """
         with self._lock: # Using a re-entrant lock
             return self._tasks.get(task_id, None)
+        
+    # def _is_open_task(self, task_id: str) -> bool:
+    #     """
+    #     Check if a task exists and is open and not finished or finalized.
+        
+    #     Args:
+    #       task_id (str): The ID of the task to check.
+
+    #     Returns:
+    #       True if the task is open, False otherwise.
+          
+    #     Status: (1)
+    #     """
 
     def _get_future_and_event(self, task_id: str) -> Union[Any, None]:
         """ 
@@ -170,50 +192,101 @@ class TaskManager:
         }
         return objects_map
 
-    # def _cleanup_drivers(self) -> None:  
-    #     """ 
-    #     Cleanup the non-active/rogue drivers in the driver pool. A driver needs to be cleaned up if
-    #     it is checked out from the driver pool, but not associated with a running task. If a driver 
-    #     is not associated with a task, but still running, the driver will be killed with selenium 
-    #     webdriver quit method.
-    #     """
-    #     def _is_rogue_driver(task_id: str) -> bool:
-    #         """
-    #         Check if a driver is rogue based on the task_id.
-    #         A driver is considered rogue if it is not in use by any task, 
-    #         running or otherwise. It is possible for drivers to be active, but
-    #         not associated with any active task.
-    #         """
-    #         task = None
-    #         future = None
-    #         driver = None
-    
-    # def _cleanup_futures(self) -> None:
-    #     """ Cleanup the non-active futures for tasks in the thread pool. """
-    #     pass
-             
-    # def _cleanup_tasks(self) -> None:
-    #     """ Background thread to cleanup old completed tasks """
-    #     # TODO: Right now, we do not clear completed tasks, leaving the internal mapping full and growing.
-    #     pass
+    def _cleanup_drivers(self) -> None:  
+        """ 
+        Cleanup the non-active/rogue drivers in the driver pool. A driver needs to be cleaned up if
+        it is checked out from the driver pool, but not associated with a running task/future. If a driver 
+        is not associated with a task, but still running, the driver will be killed with selenium 
+        webdriver quit method.
+        """
+        def _is_rogue_driver(task_id: str) -> bool:
+            """
+            Check if a driver is rogue based on the task_id.
+            A driver is considered rogue if it is not in use by any task, 
+            running or otherwise. It is possible for drivers to be active, but
+            not associated with any active task.
+            """
+            object_data = self._task_objects_exist(task_id)
+            
+            # There is no driver associated with this id.
+            if object_data["driver"] is None:
+                return False
+            
+            # There is a driver associated with this id.
+            return object_data["task"] is not None and object_data["task"] not in {Status.CANCELLED, Status.COMPLETED, Status.FAILED, Status.KILLED}
+
+        # For all the possible drivers, which are mapped in the driver pool...
+        for key in self._driver_pool._keys():
+            if _is_rogue_driver(key):
+                self._driver_pool.kill_driver()
+            else:
+                continue
+
+    def _cleanup_futures(self) -> None:
+        """
+        Cleanup the non-active futures for tasks in the thread pool.
+        """
         
-    # def shutdown(self):
-    #     """
-    #     Shutdown the TaskManager, cleaning up resources and stopping the cleanup thread.
-    #     # TODO: No good. This needs to be modeled after the class is fixed.
-    #     """
+        def _is_rogue_future(task_id: str) -> bool:
+            """
+            Check if a future is rogue based on some task_id. A Future is
+            considered rogue of there are no task associated with the same
+            task_id or if the future is associated with a task that is in 
+            a finished state.
+            """
+            object_data = self._task_objects_exist(task_id)
+            
+            # There is a future associated with this id.
+            if object_data["future"] is None:
+                return False
+            
+            # If there is no task associated with the id, then the future is rogue.
+            if object_data["task"] is None:
+                return True
+            
+            # If there is a task associated with the id, then there are several possibilites.
+            else:
+                
+                # If the task is finishied, making the future rogue. Otherwise, the future is not rogue
+                return object_data["task"] in {Status.CANCELLED, Status.COMPLETED, Status.FAILED, Status.KILLED}
         
-    #     # 1. Cancel all running tasks.
+        # Updare state and mappings for any rogue futures.
+        for key in self._driver_pool._keys():
+            if _is_rogue_future(key):
+                object_data = self._tasks_objects_exist(key)
+            
+                # If there is a driver associated with the future, then kill it.
+                if object_data["driver"] is not None:
+                    self._driver_pool.kill_driver(key)
+                
+                # Remove the future and event from the mapping  
+                with self._lock:
+                    future, event = self._futures.pop(key)
+                    self._trash_futures.append(future)
+            
+
+    def _cleanup_tasks(self) -> None:
+        """ Background thread to cleanup old completed tasks """
+        # TODO: Right now, we do not ever clear completed tasks, leaving the internal mapping full and growing.
+        pass
         
-    #     # 2. Wait for these tasks to finish.
+    def shutdown(self):
+        """
+        Shutdown the TaskManager, cleaning up resources and stopping the cleanup thread.
+        # TODO: No good. This needs to be modeled after the class is fixed.
+        """
         
-    #     # 3. Shutdown and destroy the thread pool executer.
+        # 1. Cancel all running tasks.
         
-    #     # 4. Destroy all drivers / shutdown the internal driver pool.
+        # 2. Wait for these tasks to finish.
         
-    #     # 5. Shutdown and destroy any peripheral threads.
+        # 3. Shutdown and destroy the thread pool executer.
         
-        # pass
+        # 4. Destroy all drivers / shutdown the internal driver pool.
+        
+        # 5. Shutdown and destroy any peripheral threads.
+        
+        pass
 
     # def _task_exists(self, task_id: str) -> bool:
     #     """ Check if a task exists """
@@ -439,9 +512,9 @@ class TaskManager:
                 assert task_metadata is not None, f"Task metadata not found for task_id: {task_id}."
                 
                 # With this task metadata, we can update the status and result.
-                task_metadata.status = Status.COMPLETED
                 task_metadata.result = future.result()
                 task_metadata.finished_at = datetime.now()
+                task_metadata.status = Status.COMPLETED
                 
                 # Log the successful completion of the task.
                 event_handling_operations_logger.debug(
@@ -469,9 +542,9 @@ class TaskManager:
                 assert task_metadata is not None, f"Task metadata not found for task_id: {task_id}."
             
                 # With this task metadata, we can update the status and error.
-                task_metadata.status = Status.FAILED
                 task_metadata.error = future.exception()
                 task_metadata.finished_at = datetime.now()
+                task_metadata.status = Status.FAILED
                 
                 # Log the error that occurred during task completion.
                 event_handling_operations_logger.debug(
@@ -504,9 +577,9 @@ class TaskManager:
                 assert task_metadata is not None, f"Task metadata not found for task_id: {task_id}."
                                 
                 # With this task metadata, we can update the status and result.
-                task_metadata.status = Status.CANCELLED
                 task_metadata.result = future.result() # We expect this to be at least an empty list.
                 task_metadata.finished_at = datetime.now()
+                task_metadata.status = Status.CANCELLED
                 
                 # Log the quit event that occurred during task completion.
                 event_handling_operations_logger.debug(
@@ -534,8 +607,8 @@ class TaskManager:
                 assert task_metadata is not None, f"Task metadata not found for task_id: {task_id}."
                 
                 # With this task metadata, we can update the status.
-                task_metadata.status = Status.CANCELLED
                 task_metadata.finished_at = datetime.now()
+                task_metadata.status = Status.CANCELLED
                 
                 # Log the cancellation event.
                 event_handling_operations_logger.debug(
@@ -693,6 +766,8 @@ class TaskManager:
 
         Returns:
             List of Metadata objects for all tasks.
+            
+        Status: (1)
         """
         with self._lock:
             if not statuses:
@@ -744,6 +819,8 @@ class TaskManager:
         Raises:
             RuntimeError: If no driver is available within the timeout period.
             AssertionError: If the interval is not greater than 0 or if the timeout is not greater than the interval.
+            
+        Status: (1)
         """
         
         # Assert basic conditions 
@@ -794,18 +871,19 @@ class TaskManager:
             
         Raises:
             RuntimeError: If any errors occur during the execution of this method.
+            AssertionError: ...
 
+        Status: (1)
         """
         
         # Try to execute the scrape task actions
         try:
             
             # Get the data for the task, i.e. the address, pages, results, quit event, etc.
-            with self._lock:
-                task_data = self._tasks.get(task_id, None)
-                if not task_data:
-                    raise RuntimeError(f"Task with ID '{task_id}' does not exist. Could not execute the scrape task.")
-                
+            task_data = self._get_task(task_id)
+            assert task_data is not None, f"Task with ID '{task_id}' does not exist. Could not execute the scrape task."
+            assert task_data.status in {Status.PENDING, Status.CREATED}, f"Task with ID '{task_id}' is not in a valid state to execute. Current status: {task_data.status}."
+            
             # Get a driver from the pool and execute the scrape_address function.
             driver = self._poll_for_driver(task_id=task_id,
                                            interval=10,
@@ -849,6 +927,7 @@ class TaskManager:
         """
             This method creates a new scraping task and submits it to the thread pool. It initializes the task metadata, updates the tasks and futures mappings, and submits the task to the thread pool for execution.
         
+        Status: (1)
         """
         
         # Create a new metadata object for the task.
@@ -1009,14 +1088,13 @@ class TaskManager:
             
         Raises:
             RuntimeError: If the task_id does not exist or if the task is not found.
+            
+        Status: (1)
         """
-        
-        with self._lock:
-            task_result = self._tasks.get(task_id, None)
-            if isinstance(task_result, Metadata):
-                # If the task is found, return the metadata object.
-                return task_result
-            raise RuntimeError(f"No task was found for task_id: {task_id}")
+        task_metadata = self._get_task(task_id)
+        if task_metadata is not None:
+            return task_metadata
+        raise RuntimeError(f"Task with ID '{task_id}' does not exist.")
 
     def get_task_result(self, task_id: str) -> Metadata | None:
         """
@@ -1027,11 +1105,12 @@ class TaskManager:
 
         Returns:
             Metadata object with details or None if the task is not completed or does not exist.
+        
+        Status: (1)
         """
-        with self._lock:            
-            task_result = self._tasks.get(task_id, None)
-            if not task_result: 
-                raise RuntimeError(f"No task was found for task_id: {task_id}")
-            if task_result and task_result.status in {Status.COMPLETED, Status.CANCELLED, Status.FAILED}:
-                return task_result
-        return None
+        task_metadata = self._get_task(task_id)
+        if not task_metadata: 
+            raise RuntimeError(f"No task was found for task_id: {task_id}")
+        if task_metadata and task_metadata.status in {Status.COMPLETED, Status.CANCELLED, Status.FAILED}:
+            return task_metadata
+            

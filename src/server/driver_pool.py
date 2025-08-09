@@ -53,6 +53,11 @@ class DriverPool:
         with self.lock:
             return not self.pool.empty()
         
+    def _keys(self) -> list:
+        """ Get all keys that are used in the active driver mapping. """
+        with self.lock:
+            return list(self.active_drivers.keys())
+        
     def _key_already_used(self, task_id: str) -> bool:
         """ Check whether a key is already used to check out a driver. """
         with self.lock:
@@ -162,7 +167,7 @@ class DriverPool:
         """
         with self.lock:
             # Remove from active drivers and destroy.
-            driver = self.active_drivers.pop(key=task_id, default = None)
+            driver = self.active_drivers.pop(key=task_id, default=None)
             if driver is not None:
                 driver.destroy()
 
