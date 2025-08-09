@@ -1,4 +1,4 @@
-from server.models.Metadata import Metadata, TaskType, Status
+from server.models.Metadata import Metadata, TaskType, Status, Any
 from server.models.ActionInput import InputModel
 from server.models.ActionOutput import OutputModel
 from typing import List, Tuple, Union, Dict, Callable, Optional, Set
@@ -19,7 +19,7 @@ class TaskManager:
     """
 
     def __init__(self, max_drivers: int = 5, max_workers: int = 5, cleanup_interval: int = 3600):
-
+        """ Status: (1) """
         try:
             # Initailize Driver Pool
             self._max_workers = max_workers
@@ -61,11 +61,17 @@ class TaskManager:
         
         Returns:
             A dictionary containing the driver pool information.
+            
+        Status: (1)
         """
         return self._driver_pool.stats()
     
     def _log_task_manager_state(self):
-            """ Log the current state of the TaskManager """
+            """
+            Log the current state of the TaskManager 
+            
+            Status: (1)
+            """
             state = {
                 "max_workers": self._max_workers,
                 "max_drivers": self._max_drivers,
@@ -77,67 +83,174 @@ class TaskManager:
             event_handling_operations_logger.debug(f"TaskManager state: {json.dumps(state, indent=2)}")
             return state
         
-    def _cleanup_non_active_drivers(self) -> None:  
-        """ Cleanup the non-active drivers in the driver pool. """
-        pass
+    def _get_task(self, task_id: str) -> Union[Any, None]:
+        """ 
+        Get the task metadata associated with a task ID. 
+        
+        Args:
+          task_id (str): The ID of the task to check.
+
+        Returns:
+          The task metadata associated with the task ID, or None if not found.
+          
+        Status: (1)
+        """
+        with self._lock: # Using a re-entrant lock
+            return self._tasks.get(task_id, None)
+
+    def _get_future_and_event(self, task_id: str) -> Union[Any, None]:
+        """ 
+        Get the future and event associated with a task. 
+        
+        Args:
+          task_id (str): The ID of the task to check.
+          
+        Returns:
+            The future and event associated with the task ID, or None if not found.
+            
+        Status: (1)
+        """
+        with self._lock: # Using a re-entrant lock
+            return self._futures.get(task_id, None)
+        
+    def _get_driver(self, task_id: str) -> Union[Any, None]:
+        """ 
+        Get the driver associated with a task ID. 
+        
+        Args:
+          task_id (str): The ID of the task to check.
+          
+        Returns:
+            The driver associated with the task ID, or None if not found.
+            
+        Status: (1)
+        """
+        with self._lock: # Using a re-entrant lock
+            return self._driver_pool.active_drivers.get(task_id, None)
     
-    def _cleanup_non_active_futures(self) -> None:
-        """ Cleanup the non-active futures for tasks in the thread pool. """
-        pass
+    def _task_objects(self, task_id: str) -> Dict[str, bool]:
+        """ 
+        Check whether the objects which may be associated with a task exist and are mapped in the respective mappings.
+        If the objects exist, then return these objects in a dictionary, where the keys label the objects and the values
+        are the objects themselves or None if they don't exist.
+        
+        Args:
+          task_id (str): The ID of the task to check.
+
+        Returns:
+          A dictionary indicating the existence of various task-related objects
+          
+        Status: (1)
+        """
+        objects_map = {
+            "task": self._get_task(task_id),
+            "future": self._get_future_and_event(task_id),
+            "driver": self._get_driver(task_id)
+        }
+        return objects_map
+    
+    
+    def _task_objects_exist(self, task_id: str) -> Dict[str, bool]:
+        """ 
+        Check whether the objects which may be associated with a task exist and are mapped in the respective mappings.
+        
+        Args:
+          task_id (str): The ID of the task to check.
+
+        Returns:
+          A dictionary indicating the existence of various task-related objects, where the values, if true, indicate
+          that the objects labeled by the keys exist in the internal mappings.
+          
+        Status: (1)
+        """
+        objects_map = {
+            "task": self._get_task(task_id) is not None,
+            "future": self._get_future_and_event(task_id) is not None,
+            "driver": self._get_driver(task_id) is not None
+        }
+        return objects_map
+
+    # def _cleanup_drivers(self) -> None:  
+    #     """ 
+    #     Cleanup the non-active/rogue drivers in the driver pool. A driver needs to be cleaned up if
+    #     it is checked out from the driver pool, but not associated with a running task. If a driver 
+    #     is not associated with a task, but still running, the driver will be killed with selenium 
+    #     webdriver quit method.
+    #     """
+    #     def _is_rogue_driver(task_id: str) -> bool:
+    #         """
+    #         Check if a driver is rogue based on the task_id.
+    #         A driver is considered rogue if it is not in use by any task, 
+    #         running or otherwise. It is possible for drivers to be active, but
+    #         not associated with any active task.
+    #         """
+    #         task = None
+    #         future = None
+    #         driver = None
+    
+    # def _cleanup_futures(self) -> None:
+    #     """ Cleanup the non-active futures for tasks in the thread pool. """
+    #     pass
              
-    def _cleanup_completed_tasks(self) -> None:
-        """ Background thread to cleanup old completed tasks """
-        # TODO: Right now, we do not clear completed tasks, leaving the internal mapping full and growing.
-        pass
+    # def _cleanup_tasks(self) -> None:
+    #     """ Background thread to cleanup old completed tasks """
+    #     # TODO: Right now, we do not clear completed tasks, leaving the internal mapping full and growing.
+    #     pass
         
-    def shutdown(self):
-        """
-        Shutdown the TaskManager, cleaning up resources and stopping the cleanup thread.
-        # TODO: No good. This needs to be modeled after the class is fixed.
-        """
+    # def shutdown(self):
+    #     """
+    #     Shutdown the TaskManager, cleaning up resources and stopping the cleanup thread.
+    #     # TODO: No good. This needs to be modeled after the class is fixed.
+    #     """
         
-        # 1. Cancel all running tasks.
+    #     # 1. Cancel all running tasks.
         
-        # 2. Wait for these tasks to finish.
+    #     # 2. Wait for these tasks to finish.
         
-        # 3. Shutdown and destroy the thread pool executer.
+    #     # 3. Shutdown and destroy the thread pool executer.
         
-        # 4. Destroy all drivers / shutdown the internal driver pool.
+    #     # 4. Destroy all drivers / shutdown the internal driver pool.
         
-        # 5. Shutdown and destroy any peripheral threads.
+    #     # 5. Shutdown and destroy any peripheral threads.
         
-        pass
+        # pass
 
-    def _task_exists(self, task_id: str) -> bool:
-        """ Check if a task exists """
-        with self._lock:
-            return self._tasks[task_id] is not None
+    # def _task_exists(self, task_id: str) -> bool:
+    #     """ Check if a task exists """
+    #     with self._lock:
+    #         return self._tasks[task_id] is not None
 
-    def _future_exists(self, task_id: str) -> bool:
-        """ Check if a future exists. """
-        with self._lock:
-            return self._futures[task_id][0] is not None
+    # def _future_exists(self, task_id: str) -> bool:
+    #     """ Check if a future exists. """
+    #     with self._lock:
+    #         return self._futures[task_id][0] is not None
         
     def _future_finished_with_error(self, task_id: str) -> bool:
-        """ Check if a future has finished with an error. """
-        with self._lock:
-            future = self._futures.get(task_id)[0]
-            if future:
-                return future.done() and future.exception() is not None
-            return False
+        """ 
+        Check if a future has finished with an error. 
+        
+        Status: (1)
+        """
+        data = self._get_future_and_event(task_id)
+        if data is not None:
+            future, _ = data
+            return future.done() and future.exception() is not None
+        return False
 
-    def _task_status(self, task_id: str) -> Status:
-        """ Get the hard status of some task. """
-        with self._lock:
-            task = self._tasks[task_id]
-            if task:
-                return task.status
-            else:
-                raise RuntimeError(f"Task with ID '{task_id}' does not exist.")
+    def _task_status(self, task_id: str) -> Union[Status, None]:
+        """ 
+        Get the hard status of some task. 
+        Status: (1)
+        """
+        task_metadata = self._get_task(task_id)
+        if task_metadata is not None:
+            return task_metadata.status
+        return None
             
     def _task_id_of_future(self, future: Future) -> Optional[str]:
         """ 
         Get the task_id of a created future. 
+        Status: (1)
         """
         with self._lock:
             for task_id, (fut, _) in self._futures.items():
@@ -146,7 +259,11 @@ class TaskManager:
             return None
         
     def _is_done(self, task_id: str) -> bool:
-        """ Check if the task is in a finished state. If this is ever true, the respective state details should no longer be modified."""
+        """
+        Check if the task is in a finished state. If this is ever true, the respective state details should no longer be modified.
+        
+        Status: (1)
+        """
         return self._task_status(task_id) in {Status.COMPLETED, Status.FAILED, Status.CANCELLED, Status.KILLED}
         
     def _kill_task(self, task_id: str):
