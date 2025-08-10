@@ -1,7 +1,7 @@
-from server.models.Metadata import Metadata, TaskType, Status, Any
+from server.models.Metadata import Metadata, TaskType, Status
 from server.models.ActionInput import InputModel
 from server.models.ActionOutput import OutputModel
-from typing import List, Tuple, Union, Dict, Callable, Optional, Set
+from typing import List, Tuple, Union, Dict, Callable, Optional, Set, Any
 from concurrent.futures import ThreadPoolExecutor, Future
 from datetime import datetime
 from server.driver_pool import DriverPool
@@ -32,11 +32,11 @@ class TaskManager:
 
             # Start the cleanup thread
             self._shutdown = False
-            self._cleanup_thread = threading.Thread(
-                target=self._cleanup_completed_tasks,
-                daemon=True
-            )
-            self._cleanup_thread.start()
+            # self._cleanup_thread = threading.Thread(
+            #     target=self._cleanup_completed_tasks,
+            #     daemon=True
+            # )
+            # self._cleanup_thread.start()
 
             # Create the driver pool
             self._max_drivers = max_drivers
@@ -275,18 +275,17 @@ class TaskManager:
         Shutdown the TaskManager, cleaning up resources and stopping the cleanup thread.
         # TODO: No good. This needs to be modeled after the class is fixed.
         """
-        
-        # 1. Cancel all running tasks.
-        
-        # 2. Wait for these tasks to finish.
-        
-        # 3. Shutdown and destroy the thread pool executer.
-        
-        # 4. Destroy all drivers / shutdown the internal driver pool.
-        
-        # 5. Shutdown and destroy any peripheral threads.
-        
-        pass
+        with self._lock:
+            # 1. Kill all running tasks.
+            non_finished_task_ids = [task_id for task_id in self._tasks if not self._is_done(task_id)]
+            for task_id in non_finished_task_ids:
+                self._kill_task(task_id) # Kill the tasks and seperate from any resources.
+                
+            # 2. Kill all driver instances and shutdown the pool.
+            self._driver_pool.shutdown() # This forcefully destroys all drivers, leaving any futures to finish with an error.
+
+            # 3. Wait for these tasks to finish.
+            self._executer.shutdown(wait=True, cancel_futures=True) # Wait for all futures to finish, cancelling any that are not yet running.
 
     # def _task_exists(self, task_id: str) -> bool:
     #     """ Check if a task exists """

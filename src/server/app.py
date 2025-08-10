@@ -1,5 +1,5 @@
 from server.routes import scraping_bp, init_events_handler
-from server.server_cleanup import ProcessCleanupManager
+# from server.server_cleanup import ProcessCleanupManager
 from server.config_utils.Config import Config
 from flask import Flask
 import atexit, os
@@ -32,15 +32,22 @@ def _setup_events_handler():
     Returns:
         EventsHandler: Initialized events handler instance
     """
+    
+    def _cleanup_garbage_chrome():
+        """ Cleanup garbage chrome processes that are left behind. """
+        os.system("pkill -f chrome")
+    
     # Initialize the events handler
     events_handler = init_events_handler(
         **Config.get_config("events_handler_init")
     )
 
     # Register cleanup
+    atexit.register(_cleanup_garbage_chrome)
     atexit.register(events_handler.shutdown)
     
     return events_handler
+
 
 def _override_run_method(app):
     """
@@ -54,15 +61,6 @@ def _override_run_method(app):
     
     def custom_run(host=None, port=None, debug=None, **options):
         """Override run method to use config defaults"""
-        
-        # Handle subprocess cleanup too
-        cleanup_mgr = ProcessCleanupManager(api_url=app.config["BASE_URL"])
-        app.config["CLEANUP_MANAGER"] = cleanup_mgr
-        
-        # Register cleanup immediately during app creation
-        with app.app_context():
-            main_pid = os.getpid()
-            cleanup_mgr.register_cleanup(main_pid=main_pid)
         
         # Use config values as defaults if not provided
         host = host or app.config.get("HOST", "127.0.0.1")

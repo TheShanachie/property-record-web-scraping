@@ -27,6 +27,14 @@ def get_events_handler():
             "EventsHandler not initialized. Call init_events_handler() first.")
     return events_handler
 
+def shutdown_and_cleanup():
+    """ Cleanup all resources for this end of the flask app. """
+    global events_handler
+    if events_handler is None:
+        raise RuntimeError("EventsHandler not initialized. Call init_events_handler() first.")
+    events_handler.shutdown()
+    events_handler = None
+
 
 def log_flask_endpoint_io(logger):
     """

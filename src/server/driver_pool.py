@@ -173,25 +173,17 @@ class DriverPool:
 
     def shutdown(self):
         """ 
-        Shutdown the driver pool, destroying all active and non-active drivers.
-        This will destroy all drivers in the pool and all active drivers.
-        
-        # TODO: Verify that this behavior is actually what we want.
+        Shutdown the driver pool, destroying all active and non-active drivers, regardless
+        of whether they are checked out or not. 
         """
-        
-        # Log the shutdown of the driver pool
-        resource_management_logger.info("Shutting down driver pool, destroying all drivers.")
-        
         with self.lock:
-            # Forcefully destroy any drivers, active or not.
-            values = self.active_drivers.values()
-            self.active_drivers.clear()
-            while values:
-                driver = values[-1]
+            # 1. Destroy all active drivers that are checked out.
+            checked_out_keys = self.active_drivers.keys()
+            for key in checked_out_keys:
+                driver = self.active_drivers.pop(key)
                 driver.destroy()
-                values = values[:-1]
                 
-        # Destroy non-active drivers.
-        while not self.pool.empty():
-            driver = self.pool.get()
-            driver.destroy()
+            # 2. Destroy all non-active drivers.
+            while not self.pool.empty():
+                driver = self.pool.get()
+                driver.destroy()

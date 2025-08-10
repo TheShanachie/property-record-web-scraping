@@ -12,6 +12,7 @@ from server.web_scraping_utils.scraper_utils.RecordScraper import next_record, p
 from server.web_scraping_utils.scraper_utils.RecordSearch import submit_address_search
 from server.config_utils import Config
 from threading import Event
+from requests.exceptions import RequestException
 
 class Driver:
     """
@@ -291,8 +292,11 @@ class Driver:
         
     def destroy(self):
         try:
+            self.driver.close()
             self.driver.quit()
             web_scraping_core_logger.info(msg=f"Driver instance {self.id} destroyed successfully.")
+        except RequestException: 
+            web_scraping_core_logger.warning(msg=f"Driver instance {self.id} already closed or not connected.")
         except Exception as e:
             web_scraping_core_logger.error(msg=f"Error destroying driver instance {self.id}: {e}")
             raise Exception(f"Error destroying Driver Instance {self.id}") from e
