@@ -10,7 +10,6 @@ authors = [
 ]
 description = "..."
 readme = "README.md"
-license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "annotated-types==0.7.0",
@@ -71,7 +70,9 @@ classifiers = [
 Homepage = "https://github.com/TheShanachie/property-record-web-scraping"
 
 [project.scripts]
-my-command = "my_package.cli:main"
+build = "property-record-web-scraping.src.build:main"
+test = "property-record-web-scraping.src.run_test:main"
+run_dev = "property-record-web-scraping.src.app:main"
 
 [tool.setuptools.packages]
 find = {}

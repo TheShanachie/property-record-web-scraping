@@ -68,8 +68,7 @@ def load_and_run_tests():
     runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
     return runner.run(tests)
 
-
-if __name__ == "__main__":
+def main():
     # Start the server
     start_server()
     
@@ -84,3 +83,6 @@ if __name__ == "__main__":
 
     # Exit with the appropriate status code
     sys.exit(0 if result.wasSuccessful() else 1)
+    
+if __name__ == "__main__":
+    main()
