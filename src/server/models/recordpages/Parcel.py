@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional
+from typing import List, Optional, Any
+from ..SanitizeMixin import SanitizedBaseModel
 
-
-class ParcelRecord(BaseModel):
+class ParcelRecord(SanitizedBaseModel):
     """Individual parcel record with property details."""
     
     property_location: Optional[str] = Field(alias="Property Location")
@@ -39,11 +39,11 @@ class ParcelRecord(BaseModel):
         extra = "forbid"
 
 
-class ParcelMailingAddressRecord(BaseModel):
+class ParcelMailingAddressRecord(SanitizedBaseModel):
     """Individual parcel mailing address record."""
     
     in_care_of: Optional[str] = Field(alias="In Care of")
-    names: Optional[str] = Field(alias="Name(s)")
+    name_s: Optional[str] = Field(alias="Name(s)")
     mailing_address: Optional[str] = Field(alias="Mailing Address")
     city_state_zip_code: Optional[str] = Field(alias="City, State, Zip Code")
 
@@ -60,7 +60,7 @@ class ParcelMailingAddressRecord(BaseModel):
         extra = "forbid"
 
 
-class AlternateAddressRecord(BaseModel):
+class AlternateAddressRecord(SanitizedBaseModel):
     """Individual alternate address record."""
     
     alternate_address: Optional[str] = Field(alias="Alternate Address")
@@ -81,7 +81,7 @@ class AlternateAddressRecord(BaseModel):
         extra = "forbid"
 
 
-class ActFlagsRecord(BaseModel):
+class ActFlagsRecord(SanitizedBaseModel):
     """Individual ACT flags record with various act and exemption information."""
     
     act_319_515: Optional[str] = Field(alias="Act 319/515")
@@ -109,14 +109,16 @@ class ActFlagsRecord(BaseModel):
         extra = "forbid"
 
 
-class Parcel(BaseModel):
+class Parcel(SanitizedBaseModel):
     """Root model containing parcel records and related address and flag information."""
     
     parcel: List[ParcelRecord] = Field(alias="Parcel")
     parcel_mailing_address: List[ParcelMailingAddressRecord] = Field(alias="Parcel Mailing Address")
     alternate_address: List[AlternateAddressRecord] = Field(alias="Alternate Address")
     act_flags: List[ActFlagsRecord] = Field(alias="ACT Flags")
-
+    assessor: Optional[Any] = Field(None, description="Assessor information, if available. The format of this is unknown.")
+    tax_collector: Optional[Any] = Field(None, description="Tax Collector information, if available. The format of this is unknown.")
+    
     class Config:
         populate_by_name = True
         extra = "forbid"

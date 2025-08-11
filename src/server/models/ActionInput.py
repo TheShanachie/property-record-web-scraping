@@ -3,8 +3,9 @@ from typing import Optional, List, Dict, Tuple
 from pydantic import BaseModel, Field, ConfigDict, field_validator, NonNegativeInt
 from uuid import uuid4
 from enum import Enum
+from .SanitizeMixin import SanitizedBaseModel
 
-class InputModel(BaseModel):
+class InputModel(SanitizedBaseModel):
     """
     Base model for input data.
     This class is used to define the common fields and validation logic for all input models.

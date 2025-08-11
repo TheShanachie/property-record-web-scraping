@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
+from ..SanitizeMixin import SanitizedBaseModel
 
-
-class LandRecord(BaseModel):
+class LandRecord(SanitizedBaseModel):
     """Individual land record with basic land information."""
     
     line_number: Optional[str] = Field(alias="Line #")
@@ -23,7 +23,7 @@ class LandRecord(BaseModel):
         extra = "forbid"
 
 
-class LandDetailRecord(BaseModel):
+class LandDetailRecord(SanitizedBaseModel):
     """Individual land detail record with detailed land information."""
     
     line_number: Optional[str] = Field(alias="Line Number")
@@ -48,7 +48,7 @@ class LandDetailRecord(BaseModel):
         extra = "forbid"
 
 
-class Land(BaseModel):
+class Land(SanitizedBaseModel):
     """Root model containing land records and land detail records."""
     
     land: List[LandRecord] = Field(alias="Land")

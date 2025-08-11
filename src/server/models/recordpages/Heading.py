@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
+from ..SanitizeMixin import SanitizedBaseModel
 
 
-class Heading(BaseModel):
+class Heading(SanitizedBaseModel):
     """Property heading information with owner and address details."""
     
     parid: Optional[str] = Field(alias="PARID")

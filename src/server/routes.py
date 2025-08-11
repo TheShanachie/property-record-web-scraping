@@ -94,8 +94,6 @@ def scrape():
         handler = get_events_handler()
         data = ActionInput.Scrape.model_validate(request.json)
         result = handler.scrape(data)
-        # Print the metadata id that was created
-        print(f"DEBUG: In scrape route, Created task with ID: {result.metadata.id}")
         return result.json_dump()
 
     except ValidationError as ve:

@@ -5,6 +5,7 @@ from .recordpages.Land import Land
 from .recordpages.MultiOwner import MultiOwner
 # from .recordpages.OutBuildings import OutBuildings
 from .recordpages.Owner import Owner
+from .SanitizeMixin import SanitizedBaseModel
 from .recordpages.Parcel import Parcel
 # from .recordpages.Photos import Photos
 from .recordpages.Residential import Residential
@@ -14,7 +15,10 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, ConfigDict
 
-class PageData(BaseModel):
+class PageData(SanitizedBaseModel):
+    # Non Case sensitive fields
+    model_config = ConfigDict(case_insensitive=True)
+    
     # commercial: Optional[Commercial] = Field(None, description="Commercial property details")
     homestead: Optional[Homestead] = Field(None, description="Homestead exemption details")
     land: Optional[Land] = Field(None, description="Land details")
@@ -25,9 +29,9 @@ class PageData(BaseModel):
     # photos: Optional[Photos] = Field(None, description="Photos of the property")
     residential: Optional[Residential] = Field(None, description="Residential property details")
     sales: Optional[Sales] = Field(None, description="Sales history of the property")
-    values: Optional[Values] = Field(None, description="Property values over time")
+    values: Optional[Values] = Field(None, description="Property values over time") 
 
-class Record(BaseModel):
+class Record(SanitizedBaseModel):
     """Model for property record data."""
     
     heading: Heading = Field(..., description="Heading information with owner and address details")

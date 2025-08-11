@@ -4,9 +4,17 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from server.logging_utils import web_scraping_core_logger
 
-CHECK_ELEMENT_WAIT_TIME = 5
-EXPECTED_ELEMENT_WAIT_TIME = 5
-PAGE_LOAD_WAIT_TIME = 15 
+CHECK_ELEMENT_WAIT_TIME = 5 * 3
+EXPECTED_ELEMENT_WAIT_TIME = 5 * 3
+PAGE_LOAD_WAIT_TIME = 15 * 3
+
+def _capture_source(driver: WebDriver, message: str):
+    from uuid import uuid4
+    identifier = uuid4()
+    web_scraping_core_logger.critical(f"Using identifier: {identifier}, captured source with the following message - {message}.")
+    filename = f'{identifier}.html'
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(driver.page_source)
 
 def expect_web_element(
     driver: WebDriver, args: tuple, wait_time: float = EXPECTED_ELEMENT_WAIT_TIME
@@ -24,6 +32,9 @@ def expect_web_element(
 
         # Log the unexpected behavior.
         web_scraping_core_logger.error(f"Expected element via - '{args}' but it was not found.")
+
+        # For debugging purposes, capture the current page source.
+        # _capture_source(driver, f"Expected element via - '{args}' but it was not found.")
 
         # raise an exception if the element is not found.
         raise Exception(f"Expected element via - '{args}' but it was not found.") from e
@@ -44,6 +55,9 @@ def expect_web_elements(
 
         # Log the unexpected behavior.
         web_scraping_core_logger.error(f"Expected elements via - '{args}' but it was not found.")
+
+        # For debugging purposes, capture the current page source.
+        # _capture_source(driver, f"Expected elements via - '{args}' but it was not found.")
 
         # raise exception and preserve the context.
         raise Exception(
@@ -91,6 +105,9 @@ def wait_for_page(
             f"Expected record '{expected_index}' but it was not found."
         )
 
+        # For debugging purposes, capture the current page source.
+        # _capture_source(driver, f"Expected record '{expected_index}' but it was not found.")
+
         # raise an exception and preserve the context.
         raise Exception(
             f"Expected record '{expected_index}' but it was not found."
@@ -116,6 +133,9 @@ def wait_for_subpage(
             f"Expected subpage '{expected_page}' but it was not found."
         )
 
+        # For debugging purposes, capture the current page source.
+        # _capture_source(driver, f"Expected subpage '{expected_page}' but it was not found.")
+
         # raise an exception and preserve the context.
         raise Exception(
             f"Expected subpage '{expected_page}' but it was not found."
@@ -138,6 +158,9 @@ def click_element(
 
         # Log the unexpected behavior.
         web_scraping_core_logger.error(f"Error clicking element via - '{args}'.")
+        
+        # For debugging purposes, capture the current page source.
+        # _capture_source(driver, f"Error clicking element via - '{args}'.")
 
         # raise an exception and preserve the context.
         raise Exception(f"Error clicking element via - '{args}'." ) from e

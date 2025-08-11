@@ -1,7 +1,8 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
+from ..SanitizeMixin import SanitizedBaseModel
 
-class ResidentialItem(BaseModel):
+class ResidentialItem(SanitizedBaseModel):
     card: Optional[str] = Field(..., alias="Card")
     year_built: Optional[str] = Field(..., alias="Year Built")
     remodeled_year: Optional[str] = Field(..., alias="Remodeled Year")
@@ -33,7 +34,7 @@ class ResidentialItem(BaseModel):
     basement: Optional[str] = Field(..., alias="Basement")
     exterior_wall_material: Optional[str] = Field(..., alias="Exterior Wall Material")
     physical_condition: Optional[str] = Field(..., alias="Physical Condition")
-    period: Optional[str] = Field(..., alias=".")
+    # period: Optional[str] = Field(..., alias=".")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -46,7 +47,7 @@ class ResidentialItem(BaseModel):
         extra = "forbid"
         validate_by_name = True
 
-class Residential(BaseModel):
+class Residential(SanitizedBaseModel):
     residential: List[ResidentialItem] = Field(..., alias="Residential")
 
     class Config:

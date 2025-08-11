@@ -1,4 +1,5 @@
 from server.models.Metadata import Metadata, TaskType, Status
+from server.models.Record import Record
 from server.models.ActionInput import InputModel
 from server.models.ActionOutput import OutputModel
 from typing import List, Tuple, Union, Dict, Callable, Optional, Set, Any
@@ -511,7 +512,7 @@ class TaskManager:
                 assert task_metadata is not None, f"Task metadata not found for task_id: {task_id}."
                 
                 # With this task metadata, we can update the status and result.
-                task_metadata.result = future.result()
+                task_metadata.add_result_data(future.result())  # We expect this to be at least an empty list.
                 task_metadata.finished_at = datetime.now()
                 task_metadata.status = Status.COMPLETED
                 

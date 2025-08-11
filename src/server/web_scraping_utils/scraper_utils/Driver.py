@@ -1,4 +1,4 @@
-import os.path, time, threading, json
+import os.path, time, threading, json, traceback, re
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.service import Service
@@ -182,8 +182,49 @@ class Driver:
             
             # Raise a new error and preserve the context
             raise Exception("Error passing the disclaimer") from e
-            
         
+    def clean_str(self, s: str) -> str:
+        """ Formal method for string cleaning. """
+        # Replace '#' with number.
+        s = s.replace('#', 'number')
+        # Replace non-alphanumeric characters with underscores
+        sanitized = re.sub(r'[^a-zA-Z0-9]', '_', s)
+        # Replace any series of _ with a single underscore
+        sanitized = re.sub(r'_{2,}', '_', sanitized)
+        # Strip leading and trailing underscores
+        return sanitized.strip('_').lower()
+
+            
+    def clean_page_data(self, result: dict) -> dict:
+        """ 
+        Recursively clean the keys of the page data in the result dictionary. 
+        If any keys become an empty string in this process,
+        then they are removed from the dictionary. 
+        """
+        new_dict = {}
+        for key, value in result.items():
+            new_key = self.clean_str(key)
+            if not new_key or new_key.isspace():
+                continue
+            elif isinstance(value, dict):
+                new_dict[new_key] = self.clean_page_data(value)
+            elif isinstance(value, list):
+                new_list = []
+                for item in value:
+                    new_list.append(self.clean_page_data(item))
+                new_dict[new_key] = new_list
+            else:
+                new_dict[new_key] = value
+        return new_dict
+        
+    def clean_search_results(self, results: list) -> list:
+        """ Cleanup the search results from the address search method. """
+        for result in results:
+            page_data = result['page_data']
+            cleaned_data = self.clean_page_data(page_data)
+            result['page_data'] = cleaned_data
+        return results
+
     def address_search(self, address: tuple, pages: list, num_results: int = 1, quit_event: threading.Event = None) -> list:
         """
         Perform an address search and collect data from the specified number of results. 
@@ -216,7 +257,7 @@ class Driver:
             
             # Collect the data for number of results
             results = []
-            for index in range(1,num_results+1):
+            for index in range(1, num_results+1):
                 
                 # If the quit event is true, return here.
                 if quit_event and quit_event.is_set():
@@ -237,15 +278,14 @@ class Driver:
                 web_scraping_core_logger.info(msg=f"In Driver instance {self.id}, data successfully collected for record {index} of {num_results} with head: {record_data['heading']}")
                 
                 # Get the next record
-                self.apply(func=next_record, args={"record_index": index+1})
+                if index <= num_results or self.apply(func=next_record, args={"record_index": index+1}) is None:
+                    break
                 
-            # Return the final results
+            # Clean and return the final results
+            results = self.clean_search_results(results)
             return results
         
         except Exception as e:
-            
-                # TODO: This is for debugging and should be removed in prod
-                # print("There was an error scraping address in driver.")
 
                 # Get the root cause of the error
                 current_exception = e

@@ -5,6 +5,7 @@ from enum import Enum
 from datetime import datetime
 from .Record import Record
 from .SafeErrorMixin import SafeErrorMixin
+from .SanitizeMixin import SanitizedBaseModel
 
 class Status(str, Enum):
     """Enumeration for task status"""
@@ -28,7 +29,7 @@ class TaskType(str, Enum):
     HEALTH = "health"
 
 
-class Metadata(SafeErrorMixin, BaseModel):
+class Metadata(SafeErrorMixin, SanitizedBaseModel):
     """Metadata for a task, including status and timestamps."""
     
     # Config
@@ -58,5 +59,19 @@ class Metadata(SafeErrorMixin, BaseModel):
     error_code: Optional[int] = Field(None, description="Error code if the task failed")
     error_message: Optional[str] = Field(None, description="Error message if appropriate")
     
-    
-    
+    # Method to add result data from multiple formats
+    def add_result_data(self, data: List[Union[dict, Record]]):
+        # If the data is a list of records, no change is needed.
+        if not data:
+            self.result = []
+        elif all(isinstance(item, Record) for item in data):
+            self.result = data
+        else:
+            self.result = [Record.model_validate(item) for item in data]
+
+    # Convert dicts to record objects for result
+    @field_validator('result', mode='before')
+    def convert_dicts_to_records(cls, v):
+        if isinstance(v, list):
+            return [Record.model_validate(item) for item in v]
+        return v

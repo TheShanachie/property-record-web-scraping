@@ -197,6 +197,10 @@ def next_record(driver: WebDriver, record_index: int) -> int | None:
         # Wait for the sub page.
         wait_for_subpage(driver, "Parcel")
         
+        # Check if there is a next record
+        if not is_table_card_arrow(driver):
+            return None
+
         # Click the next button to go to the next page
         click_element(driver, args=(By.ID, "DTLNavigator_imageNext"))
         

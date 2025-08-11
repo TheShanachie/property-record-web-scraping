@@ -3,6 +3,8 @@ import unittest, os, time
 from test.test_utilities.api_client import APIClient
 from test.test_utilities.logger import test_logger
 from server.models import ActionInput, ActionOutput
+from server.models.Record import Record
+from server.models.Metadata import Status
 from typing import Tuple, Optional
 
 class BaseAPITest(unittest.TestCase):
@@ -16,7 +18,21 @@ class BaseAPITest(unittest.TestCase):
     def setUp(self):
         """ Set up method, making sure the api accessable for all test. """
         self.assertTrue(self.client.active_base_url(), "API base URL is not active")
-    
+        
+    def assertValidRecord(self, record: dict, pages: list = None):
+        """
+        Verify that a record is formatted correctly. The pages argument can be used to
+        expect certain pages to be present in the record.
+        """
+        Record.model_validate(record)
+        if pages is not None:
+            possible_pages = ["Parcel", "Owner", "Multi-Owner", "Residential", "Land", "Values", "Homestead", "Sales"]
+            assert set(pages).issubset(set(possible_pages)), f"Could not validate record in {__file__} at name: {__name__}. Pages {pages} are not a subset of possible pages {possible_pages}"
+            for page in pages:
+                page = page.replace("-", "_").lower()
+                self.assertIn(page, record['page_data'])
+                self.assertIsNotNone(record['page_data'][page])
+
     def assertValidResponse(self, response: ActionOutput.OutputModel | dict, expected_status: int = 200):
         """Assert response is valid and has expected status"""
         if isinstance(response, ActionOutput.OutputModel):
@@ -45,16 +61,35 @@ class BaseAPITest(unittest.TestCase):
             num_results=num_results
         )
     
+    def poll_multiple_tasks(self, task_ids: list, timeout: int = 300, poll_interval: int = 5) -> dict:
+        """ Poll until multiple tasks complete with some finished Status. """
+        task_map = {task_id: None for task_id in task_ids}
+        
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if len(task_ids) == 0:
+                break
+            
+            for task_id in task_ids:
+                response = self.client.get_task_status(task_id).model_dump()
+                self.assertValidResponse(response, 200)
+                
+                if response['metadata']['status'] in ["completed", "failed", "cancelled", "killed"]:
+                    task_map[task_id] = response
+                    task_ids.remove(task_id)
+                
+            time.sleep(poll_interval)
+        return task_map
+                            
+                            
     def poll_until_complete(self, task_id: str, timeout: int = 300, poll_interval: int = 5) -> dict:
         """Poll task until completion with proper model validation"""
-        import time
-        test_logger.error("SCREAM")
         start_time = time.time()
         while time.time() - start_time < timeout:
             response = self.client.get_task_status(task_id).model_dump()
             self.assertValidResponse(response, 200)
 
-            if response['metadata']['status'] in ["completed", "failed", "cancelled"]:
+            if response['metadata']['status'] in ["completed", "failed", "cancelled", "killed"]:
                 return response
             
             time.sleep(poll_interval)

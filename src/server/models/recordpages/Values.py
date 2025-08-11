@@ -1,8 +1,9 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
+from ..SanitizeMixin import SanitizedBaseModel
 
 
-class ValueItem(BaseModel):
+class ValueItem(SanitizedBaseModel):
     exempt_land: Optional[str] = Field(..., alias="Exempt Land")
     exempt_building: Optional[str] = Field(..., alias="Exempt Building")
     current_land: Optional[str] = Field(..., alias="Current Land")
@@ -11,6 +12,7 @@ class ValueItem(BaseModel):
     assessed_land: Optional[str] = Field(..., alias="Assessed Land")
     assessed_building: Optional[str] = Field(..., alias="Assessed Building")
     total_assessed_value: Optional[str] = Field(..., alias="Total Assessed Value")
+    total_exempt_value: Optional[str] = Field(..., alias="Total Exempt Value")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -24,7 +26,7 @@ class ValueItem(BaseModel):
         validate_by_name = True
 
 
-class Values(BaseModel):
+class Values(SanitizedBaseModel):
     values: List[ValueItem] = Field(..., alias="Values")
 
     class Config:

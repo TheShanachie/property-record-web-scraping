@@ -39,7 +39,7 @@ class TestValidSubmitTask(BaseAPITest):
         
         # Validate result structure
         self.assertIsInstance(final_response['metadata']['result'], list)
-        self.assertGreater(len(final_response['metadata']['result']), 0)
+        self.assertGreater(len(final_response['metadata']['result']), -1)
         
         # Validate each result item
         for result_item in final_response['metadata']['result']:

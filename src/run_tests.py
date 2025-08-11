@@ -11,7 +11,6 @@ def start_server():
     """
     global server_app_id
     if server_app_id is not None:
-        print("Server is already running.")
         return server_app_id
 
     # Start the server
@@ -19,7 +18,6 @@ def start_server():
     if server_app_id == 0:  # Child process
         os.execv(sys.executable, [sys.executable, "./app.py"])
     else:  # Parent process
-        print(f"Server started with PID {server_app_id}.")
         return server_app_id
     
     
@@ -34,7 +32,6 @@ def stop_server():
 
     try:
         os.kill(server_app_id, signal.SIGKILL)  # Send SIGKILL to forcefully stop the server
-        print(f"Server with PID {server_app_id} stopped.")
     except OSError as e:
         print(f"Error stopping server: {e}")
     finally:
@@ -51,7 +48,6 @@ def wait_server(interval: int = 10, timeout: int = 60) -> None:
         try:
             response = requests.get(os.environ["API_URL"] + "/health")
             if response.status_code == 200:
-                print("Server is ready.")
                 return
         except requests.ConnectionError:
             pass
@@ -60,7 +56,7 @@ def wait_server(interval: int = 10, timeout: int = 60) -> None:
             print(f"Failed to start the server. Timeout after {timeout} seconds. Exiting.")
             exit(1)
         
-        print(f"Waiting for server to start... ({time.time() - start_time:.2f} seconds elapsed)")
+        # print(f"Waiting for server to start... ({time.time() - start_time:.2f} seconds elapsed)")
         time.sleep(interval)
         
 def load_and_run_tests():
@@ -69,7 +65,7 @@ def load_and_run_tests():
     """
     loader = unittest.TestLoader()
     tests = loader.discover(start_dir="./test", pattern="test_*.py", top_level_dir="./test")  # Adjust pattern if needed
-    runner = unittest.TextTestRunner(verbosity=1, buffer=True, tb_locals=True)
+    runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
     return runner.run(tests)
 
 

@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
+from ..SanitizeMixin import SanitizedBaseModel
 
-
-class MultiOwnerDetailRecord(BaseModel):
+class MultiOwnerDetailRecord(SanitizedBaseModel):
     """Individual multi-owner detail record with owner information."""
     
     name: Optional[str] = Field(alias="Name")
@@ -28,7 +28,7 @@ class MultiOwnerDetailRecord(BaseModel):
         extra = "forbid"
 
 
-class OwnerHistoryRecord(BaseModel):
+class OwnerHistoryRecord(SanitizedBaseModel):
     """Individual owner history record with sale information."""
     
     current_owner: Optional[str] = Field(alias="Current Owner")
@@ -51,7 +51,7 @@ class OwnerHistoryRecord(BaseModel):
         extra = "forbid"
 
 
-class MultiOwner(BaseModel):
+class MultiOwner(SanitizedBaseModel):
     """Root model containing multi-owner details and owner history records."""
     
     multi_owner_details: List[MultiOwnerDetailRecord] = Field(alias="Multi-Owner Details")

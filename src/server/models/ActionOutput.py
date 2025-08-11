@@ -5,9 +5,10 @@ from typing import Optional, List, Dict, Tuple, Any, Union
 from pydantic import BaseModel, Field, ConfigDict, field_validator, field_serializer
 from uuid import uuid4
 from enum import Enum
+from .SanitizeMixin import SanitizedBaseModel
 
     
-class OutputModel(SafeErrorMixin, BaseModel):
+class OutputModel(SafeErrorMixin, SanitizedBaseModel):
     """
     Base model for output data.
     This class is used to define the common fields and validation logic for all output models.

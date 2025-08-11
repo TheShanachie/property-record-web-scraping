@@ -1,8 +1,8 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
+from ..SanitizeMixin import SanitizedBaseModel
 
-
-class SalesItem(BaseModel):
+class SalesItem(SanitizedBaseModel):
     date_recorded: Optional[str] = Field(..., alias="Date Recorded")
     new_owner: Optional[str] = Field(..., alias="New Owner")
     sale_price: Optional[str] = Field(..., alias="Sale Price")
@@ -20,7 +20,7 @@ class SalesItem(BaseModel):
         validate_by_name = True
 
 
-class SalesDetailItem(BaseModel):
+class SalesDetailItem(SanitizedBaseModel):
     sale_date: Optional[str] = Field(..., alias="Sale Date")
     sale_price: Optional[str] = Field(..., alias="Sale Price")
     new_owner: Optional[str] = Field(..., alias="New Owner")
@@ -41,7 +41,7 @@ class SalesDetailItem(BaseModel):
         validate_by_name = True
 
 
-class Sales(BaseModel):
+class Sales(SanitizedBaseModel):
     sales: List[SalesItem] = Field(..., alias="Sales\n  ")
     sales_detail: List[SalesDetailItem] = Field(..., alias="Sales Detail\n  ")
 

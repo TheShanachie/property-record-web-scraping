@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field, field_validator
+from .SanitizeMixin import SanitizedBaseModel
 from typing import Optional, Any
 import traceback
 
-class ExceptionInfo(BaseModel):
+class ExceptionInfo(SanitizedBaseModel):
     type: str
     message: str
     file: Optional[str]
@@ -40,7 +41,7 @@ class ExceptionInfo(BaseModel):
     def __repr__(self) -> str:
         return self.format_details()
 
-class SafeErrorMixin(BaseModel):
+class SafeErrorMixin(SanitizedBaseModel):
     """ Mixin for Error Field """
     error: Optional[ExceptionInfo] = Field(default=None)
     

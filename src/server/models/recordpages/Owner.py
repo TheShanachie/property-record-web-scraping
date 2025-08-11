@@ -1,16 +1,21 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
+from ..SanitizeMixin import SanitizedBaseModel
 
-
-class CurrentOwnerDetailRecord(BaseModel):
+class CurrentOwnerDetailRecord(SanitizedBaseModel):
     """Individual current owner detail record with owner information."""
     
-    names: Optional[str] = Field(alias="Name(s)")
+    name_s: Optional[str] = Field(alias="Name(s)")
     in_care_of: Optional[str] = Field(alias="In Care of")
     mailing_address: Optional[str] = Field(alias="Mailing Address")
     city_state_zip_code: Optional[str] = Field(alias="City, State, Zip Code")
     book: Optional[str] = Field(alias="Book")
     page: Optional[str] = Field(alias="Page")
+    deed_2: Optional[str] = Field(alias="Deed 2")
+    deed_3: Optional[str] = Field(alias="Deed 3")
+    deed_4: Optional[str] = Field(alias="Deed 4")
+    deed_5: Optional[str] = Field(alias="Deed 5")
+    
 
     @field_validator('*', mode='before')
     @classmethod
@@ -25,7 +30,7 @@ class CurrentOwnerDetailRecord(BaseModel):
         extra = "forbid"
 
 
-class OwnerHistoryRecord(BaseModel):
+class OwnerHistoryRecord(SanitizedBaseModel):
     """Individual owner history record with sale information."""
     
     current_owner: Optional[str] = Field(alias="Current Owner")
@@ -48,7 +53,7 @@ class OwnerHistoryRecord(BaseModel):
         extra = "forbid"
 
 
-class Owner(BaseModel):
+class Owner(SanitizedBaseModel):
     """Root model containing current owner details and owner history records."""
     
     current_owner_details: List[CurrentOwnerDetailRecord] = Field(alias="Current Owner Details")
