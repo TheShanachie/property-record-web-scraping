@@ -1,11 +1,13 @@
 import logging
+import os
+from pathlib import Path
 
 def _create_test_logger(name: str, level: int = logging.DEBUG) -> logging.Logger:
     """
     Create a test logger with the specified name and level.
     """
-    filename = f"./test/logs/{name}.log"
-    
+    filename = os.path.join(__file__, '..', '..', 'logs', f"{name}.log")
+
     logger = logging.getLogger(name)
     logger.setLevel(level)
     
