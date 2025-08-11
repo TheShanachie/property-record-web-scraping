@@ -173,6 +173,10 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# VSCode data
+.vscode
+.vscode/
+
 # Github data
 .github
 .github/
