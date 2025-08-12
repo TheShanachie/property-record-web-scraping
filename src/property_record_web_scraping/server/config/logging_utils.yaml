@@ -1,4 +1,4 @@
-log-dir: "./src/server/logs/"
+log-dir: "./src/property_record_web_scraping/server/logs/"
 
 # Logger Configuration
 loggers:

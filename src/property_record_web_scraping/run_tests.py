@@ -1,8 +1,11 @@
 from pathlib import Path
-import unittest, os, requests, server, time, sys, signal
+import unittest, os, requests, time, sys, signal
+from . import server
 
 # Add schema path to envrionemt
-PROJECT_ROOT = Path(__file__).parent.absolute()  # Points to ./src
+# This file is at src/property_record_web_scraping/run_tests.py
+# Need to go up 3 levels: property_record_web_scraping -> src -> project_root
+PROJECT_ROOT = Path(__file__).parent.parent.parent.absolute()
 os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
 os.environ["API_URL"] = "http://localhost:5000/api/v1"
 
@@ -28,7 +31,7 @@ def start_server():
     # Start the server
     server_app_id = os.fork()
     if server_app_id == 0:  # Child process
-        app_path = os.path.join(PROJECT_ROOT, "app.py")
+        app_path = os.path.join(PROJECT_ROOT, "src", "property_record_web_scraping", "app.py")
         os.execv(sys.executable, [sys.executable, app_path])
     else:  # Parent process
         return server_app_id
@@ -73,31 +76,69 @@ def wait_server(interval: int = 10, timeout: int = 60) -> None:
         # print(f"Waiting for server to start... ({time.time() - start_time:.2f} seconds elapsed)")
         time.sleep(interval)
         
+def should_skip_global_server():
+    """Check if global server startup should be skipped"""
+    return os.environ.get("SKIP_GLOBAL_SERVER") == "1"
+
 def load_and_run_tests():
     """
     Load and run all tests in the test directory.
     """
     loader = unittest.TestLoader()
-    start_dir = os.path.join(PROJECT_ROOT, "test")  # Adjust path to your test directory
-    tests = loader.discover(start_dir=start_dir, pattern="test_*.py", top_level_dir=start_dir)  # Adjust pattern if needed
-    runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
-    return runner.run(tests)
+    start_dir = os.path.join(PROJECT_ROOT, "src", "property_record_web_scraping", "test")
+    
+    # Load all tests first
+    all_tests = loader.discover(start_dir=start_dir, pattern="test_*.py", top_level_dir=start_dir)
+    
+    # Check if any tests require standalone server management
+    has_standalone_tests = any(
+        "test_directory_independence" in str(test)
+        for test in all_tests
+    )
+    
+    if has_standalone_tests:
+        # Split tests into two suites
+        standalone_suite = unittest.TestSuite()
+        regular_suite = unittest.TestSuite()
+        
+        for test_group in all_tests:
+            for test_case in test_group:
+                if "test_directory_independence" in str(test_case):
+                    standalone_suite.addTest(test_case)
+                else:
+                    regular_suite.addTest(test_case)
+        
+        runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
+        
+        # Run standalone tests first (they manage their own server)
+        print("Running standalone server tests...")
+        standalone_result = runner.run(standalone_suite)
+        
+        # Run regular tests with global server
+        if regular_suite.countTestCases() > 0:
+            print("Running regular tests with global server...")
+            start_server()
+            wait_server()
+            regular_result = runner.run(regular_suite)
+            stop_server()
+            
+            # Combine results
+            standalone_result.testsRun += regular_result.testsRun
+            standalone_result.failures.extend(regular_result.failures)
+            standalone_result.errors.extend(regular_result.errors)
+        
+        return standalone_result
+    else:
+        # Original behavior for regular tests only
+        runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
+        return runner.run(all_tests)
 
 def main():
     # Check start conditions
     assert_start_conditions()
     
-    # Start the server
-    start_server()
-    
-    # Wait for the server to be ready
-    wait_server()
-
-    # Run the tests
+    # Run the tests (server management now handled in load_and_run_tests)
     result = load_and_run_tests()
-
-    # Stop the server after tests are done
-    stop_server()
 
     # Exit with the appropriate status code
     sys.exit(0 if result.wasSuccessful() else 1)

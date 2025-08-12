@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools >= 77.0.3", "wheel]
+requires = ["setuptools >= 77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "property-record-web-scraping"
 version = "0.0.4"
-license = {file = "LICENSE"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-    { name = "Anonymous", email = "..." },
+    { name = "TheShanachie" },
 ]
 description = "..."
 readme = "README.md"
@@ -63,8 +64,7 @@ dependencies = [
     "wsproto==1.2.0"
 ]
 classifiers = [
-    "Programming Language :: Python :: 3.12.3",
-    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
     "Operating System :: POSIX :: Linux",
 ]
 
@@ -73,11 +73,14 @@ Homepage = "https://github.com/TheShanachie/property-record-web-scraping"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = [""]  # Empty string means "use the root package"
+packages = {find = {where = ["src"]}} 
+
+[tool.setuptools.package-data]
+property_record_web_scraping = ["server/config/*.yaml"]
 
 [project.scripts]
-run-app = "app:main"
-test-app = "run_tests:main"
+run-app = "property_record_web_scraping.app:main"
+test-app = "property_record_web_scraping.run_tests:main"
 
 
 

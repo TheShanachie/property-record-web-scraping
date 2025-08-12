@@ -38,17 +38,25 @@ class Config:
     def _resolve_relative_path(cls, path: str) -> str:
         """
         Resolve a relative path to an absolute path based on the project root directory.
-        This method assumes that the path starts with './src/server/' and resolves it to an absolute path.
-        
-        Args:
-            path (str): The relative path to resolve.
-        
-        Returns:
-            str: The absolute path resolved from the given relative path.
         """
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-        return os.path.join(project_root, path.lstrip('./'))
-    
+        # Get project root from environment or derive from file location
+        project_root = os.environ.get('PROJECT_ROOT')
+        
+        if not project_root:
+            # This file is at src/property_record_web_scraping/server/config_utils/Config.py
+            current_file = os.path.abspath(__file__)
+            # Go up: config_utils -> server -> property_record_web_scraping -> src
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file))))
+        
+        # Handle different path formats
+        if path.startswith('./'):
+            path = path[2:]  # Remove './'
+        elif path.startswith('/'):
+            return path  # Already absolute
+        
+        resolved_path = os.path.join(project_root, path)
+        return resolved_path
+
     @classmethod
     def _resolve_paths_where_possible(cls, config: dict) -> dict:
         """
@@ -64,9 +72,10 @@ class Config:
         def _valid_format(path: str) -> bool:
             """
             Check if the path is in a valid format to be resolved.
-            Valid paths must start with ./src/server/<...> pattern.
+            Valid paths must start with ./property_record_web_scraping/<...> pattern.
             """
-            return path.startswith('./src/server/')
+            # print(f"Validating path format: {path}")
+            return path.startswith('./src/property_record_web_scraping/')
         
         for key, value in config.items():
             if isinstance(value, dict):
@@ -74,6 +83,7 @@ class Config:
             elif isinstance(value, str) and _valid_format(value):
                 config[key] = cls._resolve_relative_path(value)
             # If the value is not a string or dict, we leave it as is.
+            # print(json.dumps({key: value}, indent=2))  # Debugging output to see resolved paths
         return config
 
     @classmethod

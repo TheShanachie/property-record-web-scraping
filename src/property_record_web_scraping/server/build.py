@@ -26,6 +26,9 @@ def install_chrome_and_driver_fixed_dirs(
     Returns:
         dict with paths to installed binaries.
     """
+    # Make sure the build directory exists.
+    assert os.path.isdir(build_dir), f"Build directory does not exist: {build_dir}"
+    
     chrome_dir = os.path.join(build_dir, "chrome-linux64")
     driver_dir = os.path.join(build_dir, "chromedriver-linux64")
 
@@ -70,7 +73,6 @@ def _download_and_extract(url: str, dest_dir: str) -> None:
     finally:
         os.remove(tmp_path)
 
-
 def _locate_binary(root: str, names: list) -> str:
     for dirpath, _, filenames in os.walk(root):
         for f in filenames:
@@ -86,7 +88,7 @@ def _ensure_executable(path: str) -> None:
 
 
 if __name__ == "__main__":
-    build_dir = "./src/server/build/bin"
+    build_dir = "./src/property_record_web_scraping/server/build/bin"
     result = install_chrome_and_driver_fixed_dirs(
         chrome_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chrome-linux64.zip",
         driver_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chromedriver-linux64.zip",
