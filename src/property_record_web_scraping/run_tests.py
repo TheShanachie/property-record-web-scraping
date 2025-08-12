@@ -1,11 +1,12 @@
-from pathlib import Path
 import unittest, os, requests, time, sys, signal
-from . import server
 
-# Add schema path to envrionemt
-# This file is at src/property_record_web_scraping/run_tests.py
-# Need to go up 3 levels: property_record_web_scraping -> src -> project_root
-PROJECT_ROOT = Path(__file__).parent.parent.parent.absolute()
+# Use centralized Config for path setup
+from property_record_web_scraping.server.config_utils import Config
+Config.setup_python_path()
+import property_record_web_scraping.server as server
+
+# Set up project root using centralized Config
+PROJECT_ROOT = Config.get_project_root()
 os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
 os.environ["API_URL"] = "http://localhost:5000/api/v1"
 

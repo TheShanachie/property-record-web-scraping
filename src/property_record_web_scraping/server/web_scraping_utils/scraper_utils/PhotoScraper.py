@@ -1,9 +1,10 @@
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 import urllib, time, os, re, cv2, base64, numpy as np, PIL
-from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, click_element
+from property_record_web_scraping.server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, click_element
 from selenium.webdriver.common.action_chains import ActionChains
-from server.logging_utils import web_scraping_core_logger
+from property_record_web_scraping.server.logging_utils import web_scraping_core_logger
+from property_record_web_scraping.server.config_utils import Config
 
 # Function to encode image to base64
 def encode_image_to_base64(image_path: str) -> str:
@@ -42,16 +43,18 @@ def decode_base64_to_image(image_base64: str) -> np.ndarray:
 def scrape_current_photo(driver: WebDriver):
     try: 
         # Some variables.
-        ## This is hardcoded for now, but should be part of the config called in 'Driver' constructor.
-        download_dir = "./Logs/TempEmpty"  # Directory where the downloaded file will be saved.    
+        ## Get download directory from config
+        selenium_config = Config.get_config(['selenium_chrome'])
+        download_dir = selenium_config['experimental-chrome-options']['download.default_directory']
         
         # This function expects some conditions prior to execution:
         ## The download directory must exist.
-        download_dir_exists = os.path.exists(os.path.join(os.getcwd(), download_dir))   
+        download_dir_path = Config.resolve_path(download_dir)
+        download_dir_exists = os.path.exists(download_dir_path)   
         assert download_dir_exists, "Download directory does not exist." 
         
         ## The download directory must be empty.
-        download_dir_empty = len(os.listdir(download_dir)) == 0
+        download_dir_empty = len(os.listdir(download_dir_path)) == 0
         assert download_dir_empty, "Download directory is not empty."
         
         # Function to wait for download to complete

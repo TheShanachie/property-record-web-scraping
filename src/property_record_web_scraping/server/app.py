@@ -1,6 +1,6 @@
-from server.routes import scraping_bp, init_events_handler
+from property_record_web_scraping.server.routes import scraping_bp, init_events_handler
 # from server.server_cleanup import ProcessCleanupManager
-from server.config_utils.Config import Config
+from property_record_web_scraping.server.config_utils.Config import Config
 from flask import Flask
 import atexit, os
 
@@ -51,7 +51,7 @@ def _setup_events_handler():
 
 def _override_run_method(app):
     """
-    Override the Flask app's run method to use config defaults.
+    Override the Flask app's run method to use config defaults and initialize drivers on run.
     
     Args:
         app (Flask): Flask application instance
@@ -60,7 +60,12 @@ def _override_run_method(app):
     _original_run = app.run
     
     def custom_run(host=None, port=None, debug=None, **options):
-        """Override run method to use config defaults"""
+        """Override run method to use config defaults and lazy-initialize drivers"""
+        
+        # Initialize drivers and events handler only when actually running
+        if not hasattr(app, '_events_handler_initialized'):
+            _setup_events_handler()
+            app._events_handler_initialized = True
         
         # Use config values as defaults if not provided
         host = host or app.config.get("HOST", "127.0.0.1")
@@ -91,13 +96,10 @@ def _create_app():
     # Configure Flask app
     app = _configure_flask_app()
     
-    # Setup events handler
-    _setup_events_handler()
-    
     # Register blueprints
     _register_blueprints(app)
     
-    # Override run method to use config defaults
+    # Override run method to use config defaults and lazy-initialize drivers
     _override_run_method(app)
 
     return app

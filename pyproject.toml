@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "property-record-web-scraping"
-version = "0.0.4"
+version = "0.0.6"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
@@ -29,6 +29,7 @@ dependencies = [
     "Jinja2==3.1.6",
     "jsonschema==4.23.0",
     "jsonschema-specifications==2025.4.1",
+    "keyring>=24.0.0",
     "MarkupSafe==3.0.2",
     "numpy==2.2.5",
     "opencv-python==4.12.0.88",
@@ -73,10 +74,10 @@ Homepage = "https://github.com/TheShanachie/property-record-web-scraping"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = {find = {where = ["src"]}} 
+packages = {find = {where = ["src"], exclude = ["*.log", "*chromedriver*", "*chrome-linux*"]}} 
 
 [tool.setuptools.package-data]
-property_record_web_scraping = ["server/config/*.yaml"]
+property_record_web_scraping = ["server/config/*.yaml", "server/build/build.sh", "server/build/docs/*.md", "server/logs/.gitkeep", "server/build/bin/.gitkeep"]
 
 [project.scripts]
 run-app = "property_record_web_scraping.app:main"

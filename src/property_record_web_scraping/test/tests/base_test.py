@@ -1,10 +1,10 @@
 
 import unittest, os, time
-from test.test_utilities.api_client import APIClient
-from test.test_utilities.logger import test_logger
-from server.models import ActionInput, ActionOutput
-from server.models.Record import Record
-from server.models.Metadata import Status
+from property_record_web_scraping.test.test_utilities.api_client import APIClient
+from property_record_web_scraping.test.test_utilities.logger import test_logger
+from property_record_web_scraping.server.models import ActionInput, ActionOutput
+from property_record_web_scraping.server.models.Record import Record
+from property_record_web_scraping.server.models.Metadata import Status
 from typing import Tuple, Optional
 
 class BaseAPITest(unittest.TestCase):

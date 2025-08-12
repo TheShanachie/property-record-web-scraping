@@ -1,10 +1,10 @@
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 import urllib, time, os, re
-from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, wait_for_page, click_element
+from property_record_web_scraping.server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, expect_web_elements, check_web_element, wait_for_subpage, wait_for_page, click_element
 from selenium.webdriver.common.action_chains import ActionChains
-from server.logging_utils import web_scraping_core_logger
-from server.web_scraping_utils.scraper_utils.PhotoScraper import scrape_photo_page
+from property_record_web_scraping.server.logging_utils import web_scraping_core_logger
+from property_record_web_scraping.server.web_scraping_utils.scraper_utils.PhotoScraper import scrape_photo_page
 
 def parse_record_card(table: WebDriver) -> dict:
     """

@@ -1,8 +1,8 @@
 import threading
 import queue
-from server.web_scraping_utils.scraper_utils import Driver
+from property_record_web_scraping.server.web_scraping_utils.scraper_utils import Driver
 from typing import Dict, Tuple
-from server.logging_utils import resource_management_logger
+from property_record_web_scraping.server.logging_utils import resource_management_logger
 
 class DriverPool:
     def __init__(self, max_drivers=5):

@@ -1,5 +1,5 @@
-from server.models import ActionInput, ActionOutput
-from server.task_manager import TaskManager
+from property_record_web_scraping.server.models import ActionInput, ActionOutput
+from property_record_web_scraping.server.task_manager import TaskManager
 from pydantic import validate_call
 import traceback
 

@@ -1,12 +1,12 @@
-from server.models.Metadata import Metadata, TaskType, Status
-from server.models.Record import Record
-from server.models.ActionInput import InputModel
-from server.models.ActionOutput import OutputModel
+from property_record_web_scraping.server.models.Metadata import Metadata, TaskType, Status
+from property_record_web_scraping.server.models.Record import Record
+from property_record_web_scraping.server.models.ActionInput import InputModel
+from property_record_web_scraping.server.models.ActionOutput import OutputModel
 from typing import List, Tuple, Union, Dict, Callable, Optional, Set, Any
 from concurrent.futures import ThreadPoolExecutor, Future
 from datetime import datetime
-from server.driver_pool import DriverPool
-from server.logging_utils import event_handling_operations_logger
+from property_record_web_scraping.server.driver_pool import DriverPool
+from property_record_web_scraping.server.logging_utils import event_handling_operations_logger
 import threading
 import time, json
 

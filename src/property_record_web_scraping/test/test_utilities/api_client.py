@@ -1,6 +1,6 @@
 from typing import Tuple, Optional, Type
 from pydantic import BaseModel, ValidationError
-from server.models import ActionInput, ActionOutput
+from property_record_web_scraping.server.models import ActionInput, ActionOutput
 from .logger import test_logger
 import requests
 import json

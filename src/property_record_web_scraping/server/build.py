@@ -88,7 +88,9 @@ def _ensure_executable(path: str) -> None:
 
 
 if __name__ == "__main__":
-    build_dir = "./src/property_record_web_scraping/server/build/bin"
+    # Use centralized Config for consistent path resolution
+    from property_record_web_scraping.server.config_utils import Config
+    build_dir = str(Config.get_build_dir())
     result = install_chrome_and_driver_fixed_dirs(
         chrome_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chrome-linux64.zip",
         driver_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chromedriver-linux64.zip",

@@ -1,4 +1,6 @@
-import yaml, os, json
+import yaml, os, json, sys
+from pathlib import Path
+from typing import Union, Optional
 
 class Config:
     """
@@ -23,6 +25,8 @@ class Config:
     """
     _instance = None
     _config = None
+    _project_root: Optional[Path] = None
+    _package_root: Optional[Path] = None
 
     def __new__(cls):
         """
@@ -34,28 +38,145 @@ class Config:
             cls._config = {}
         return cls._instance
     
+    # === CENTRALIZED PATH MANAGEMENT METHODS ===
+    
+    @classmethod
+    def get_project_root(cls) -> Path:
+        """
+        Get the project root directory (contains pyproject.toml).
+        This is the single source of truth for project root calculation.
+        
+        Returns:
+            Path: Absolute path to project root
+        """
+        if cls._project_root is not None:
+            return cls._project_root
+            
+        # Try environment variable first (highest priority)
+        if 'PROJECT_ROOT' in os.environ:
+            cls._project_root = Path(os.environ['PROJECT_ROOT']).absolute()
+            if cls._validate_project_root(cls._project_root):
+                return cls._project_root
+        
+        # Calculate from this file location (Config.py)
+        current_file = Path(__file__).absolute()
+        # This file is at: src/property_record_web_scraping/server/config_utils/Config.py
+        # Go up: config_utils -> server -> property_record_web_scraping -> src -> project_root
+        cls._project_root = current_file.parent.parent.parent.parent.parent
+        
+        # Validate calculation
+        if not cls._validate_project_root(cls._project_root):
+            # Fallback: search upward for pyproject.toml
+            cls._project_root = cls._find_project_root_upward(current_file)
+        
+        # Ensure environment variable is set for other components
+        os.environ['PROJECT_ROOT'] = str(cls._project_root)
+        return cls._project_root
+    
+    @classmethod
+    def _validate_project_root(cls, path: Path) -> bool:
+        """Validate that a path is the correct project root."""
+        return path.exists() and (path / "pyproject.toml").exists()
+    
+    @classmethod
+    def _find_project_root_upward(cls, start_path: Path) -> Path:
+        """Search upward from start_path to find directory containing pyproject.toml."""
+        current = start_path.parent
+        while current.parent != current:  # Stop at filesystem root
+            if (current / "pyproject.toml").exists():
+                return current
+            current = current.parent
+        
+        # If not found, use package directory as fallback
+        return cls.get_package_root()
+    
+    @classmethod
+    def get_package_root(cls) -> Path:
+        """Get the package root (src/property_record_web_scraping)."""
+        if cls._package_root is not None:
+            return cls._package_root
+            
+        current_file = Path(__file__).absolute()
+        # Go up: config_utils -> server -> property_record_web_scraping
+        cls._package_root = current_file.parent.parent.parent
+        return cls._package_root
+    
+    @classmethod
+    def get_src_root(cls) -> Path:
+        """Get the src directory."""
+        return cls.get_project_root() / "src"
+    
+    @classmethod
+    def setup_python_path(cls) -> None:
+        """Add src directory to Python path if not already present."""
+        src_path = str(cls.get_src_root())
+        if src_path not in sys.path:
+            sys.path.insert(0, src_path)
+    
+    @classmethod
+    def resolve_path(cls, path: Union[str, Path]) -> Path:
+        """
+        Universal path resolver that handles all path types.
+        
+        This method should be used by all components needing path resolution.
+        
+        Args:
+            path: Can be:
+                - Absolute path (starts with /)
+                - Config-style relative path (starts with ./src/property_record_web_scraping/)
+                - Generic relative path (starts with ./)
+                - Plain relative path (assumed relative to project root)
+        
+        Returns:
+            Path: Absolute resolved path
+        """
+        if isinstance(path, Path):
+            path = str(path)
+            
+        if path.startswith('/'):
+            # Already absolute
+            return Path(path)
+        elif path.startswith('./src/property_record_web_scraping/'):
+            # Config-style path - resolve from project root
+            clean_path = path[2:]  # Remove './'
+            return cls.get_project_root() / clean_path
+        elif path.startswith('./'):
+            # Generic relative path from project root
+            return cls.get_project_root() / path[2:]
+        else:
+            # Plain relative path - assume from project root
+            return cls.get_project_root() / path
+    
+    @classmethod
+    def get_build_dir(cls) -> Path:
+        """Get the build directory based on installation context."""
+        project_root = cls.get_project_root()
+        if (project_root / "pyproject.toml").exists():
+            # Development mode
+            return project_root / "src" / "property_record_web_scraping" / "server" / "build" / "bin"
+        else:
+            # Installed package mode
+            return cls.get_package_root() / "server" / "build" / "bin"
+    
+    @classmethod
+    def get_config_dir(cls) -> Path:
+        """Get the config directory."""
+        return cls.get_package_root() / "server" / "config"
+    
+    @classmethod
+    def get_logs_dir(cls) -> Path:
+        """Get the logs directory."""
+        return cls.get_package_root() / "server" / "logs"
+    
+    # === ENHANCED EXISTING METHODS ===
+    
     @classmethod
     def _resolve_relative_path(cls, path: str) -> str:
         """
-        Resolve a relative path to an absolute path based on the project root directory.
+        Resolve a relative path to an absolute path.
+        Now uses the centralized path resolver.
         """
-        # Get project root from environment or derive from file location
-        project_root = os.environ.get('PROJECT_ROOT')
-        
-        if not project_root:
-            # This file is at src/property_record_web_scraping/server/config_utils/Config.py
-            current_file = os.path.abspath(__file__)
-            # Go up: config_utils -> server -> property_record_web_scraping -> src
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file))))
-        
-        # Handle different path formats
-        if path.startswith('./'):
-            path = path[2:]  # Remove './'
-        elif path.startswith('/'):
-            return path  # Already absolute
-        
-        resolved_path = os.path.join(project_root, path)
-        return resolved_path
+        return str(cls.resolve_path(path))
 
     @classmethod
     def _resolve_paths_where_possible(cls, config: dict) -> dict:
@@ -72,10 +193,11 @@ class Config:
         def _valid_format(path: str) -> bool:
             """
             Check if the path is in a valid format to be resolved.
-            Valid paths must start with ./property_record_web_scraping/<...> pattern.
+            Enhanced to use centralized path resolution.
             """
-            # print(f"Validating path format: {path}")
-            return path.startswith('./src/property_record_web_scraping/')
+            return (path.startswith('./src/property_record_web_scraping/') or 
+                    path.startswith('./') or
+                    (not path.startswith('/') and len(path) > 0))
         
         for key, value in config.items():
             if isinstance(value, dict):
@@ -87,23 +209,26 @@ class Config:
         return config
 
     @classmethod
-    def initialize(cls, source: str | list | None = None) -> None:
+    def initialize(cls, source: str | list | None = None, force_reload: bool = False) -> None:
         """
-        Initialize the configuration by loading it from a specified source. If the configuration is 
-        already loaded, this method will overwrite the existing configuration with the new one.
-        The source can be a single YAML file, a list of YAML files, or a directory containing YAML files.
-        If no source is provided, it defaults to loading from the 'config' directory.
-
+        Initialize the configuration by loading it from a specified source. 
+        This method is idempotent - safe to call multiple times.
+        
         Args:
             source (str | list | None): Path to a single YAML file, a list of YAML file paths, or a directory path.
+            force_reload (bool): If True, force reload even if already initialized.
         
         Raises:
             FileNotFoundError: If the specified file or directory does not exist.
             Exception: If there is an error reading any of the configuration files.
         """
         
-        # Read and create the dict.
-        cls._instance = cls()  # Ensure we are working with the singleton instance
+        # Check if already initialized (singleton behavior)
+        if cls._config and not force_reload:
+            return  # Already initialized, don't reload
+        
+        # Ensure we have a singleton instance
+        cls._instance = cls()
         if isinstance(source, str):
             if os.path.isdir(source):
                 cls._config = cls._load_config_from_dir(source)
@@ -115,7 +240,11 @@ class Config:
             cls._config = cls._load_config_from_list(source)
         elif source is None:
             # Default to loading from the 'config' directory
-            cls._config = {}
+            config_dir = cls.get_config_dir()
+            if config_dir.exists():
+                cls._config = cls._load_config_from_dir(str(config_dir))
+            else:
+                cls._config = {}
         else:
             raise ValueError("Source must be a string (file path), a list of file paths, or None.")
         
@@ -201,6 +330,10 @@ class Config:
         Raises:
             KeyError: If any key in the list or as a string is not found in the configuration.
         """
+        # Lazy initialization - initialize if not already done
+        if not cls._config:
+            cls.initialize()
+            
         instance = cls()
         if key is None:
             return instance._config

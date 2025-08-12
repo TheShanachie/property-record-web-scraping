@@ -6,11 +6,11 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from typing import Callable
-from server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, wait_for_page, wait_for_subpage
-from server.logging_utils import web_scraping_core_logger
-from server.web_scraping_utils.scraper_utils.RecordScraper import next_record, parse_record
-from server.web_scraping_utils.scraper_utils.RecordSearch import submit_address_search
-from server.config_utils import Config
+from property_record_web_scraping.server.web_scraping_utils.scraper_utils.GetElement import expect_web_element, wait_for_page, wait_for_subpage
+from property_record_web_scraping.server.logging_utils import web_scraping_core_logger
+from property_record_web_scraping.server.web_scraping_utils.scraper_utils.RecordScraper import next_record, parse_record
+from property_record_web_scraping.server.web_scraping_utils.scraper_utils.RecordSearch import submit_address_search
+from property_record_web_scraping.server.config_utils import Config
 from threading import Event
 from requests.exceptions import RequestException
 
@@ -82,7 +82,7 @@ class Driver:
         
         ## Experimental options
         # This is for downloading files like images.
-        self.config["experimental-chrome-options"]["download.default_directory"] = os.path.join(os.getcwd(), self.config["experimental-chrome-options"]["download.default_directory"])
+        self.config["experimental-chrome-options"]["download.default_directory"] = str(Config.resolve_path(self.config["experimental-chrome-options"]["download.default_directory"]))
         self.chrome_options.add_experimental_option("prefs", self.config["experimental-chrome-options"])            
         
         # Choose Chrome Browser

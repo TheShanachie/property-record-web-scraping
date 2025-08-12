@@ -1,11 +1,11 @@
 from flask import Blueprint, jsonify, request
 from typing import Callable, Tuple, Any, Dict, Optional, List
 from pydantic import ValidationError
-from server.events import EventsHandler
-from server.models import ActionInput, ActionOutput
+from property_record_web_scraping.server.events import EventsHandler
+from property_record_web_scraping.server.models import ActionInput, ActionOutput
 import time, json, uuid, traceback
 from functools import wraps
-from server.logging_utils.loggers import flask_app_interactions_logger
+from property_record_web_scraping.server.logging_utils.loggers import flask_app_interactions_logger
 
 # Create a Blueprint instead of Flask app
 scraping_bp = Blueprint('scraping', __name__)

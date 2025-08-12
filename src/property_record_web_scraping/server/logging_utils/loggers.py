@@ -1,5 +1,5 @@
 # Import basic utilities
-from server.config_utils import Config
+from property_record_web_scraping.server.config_utils import Config
 import logging, os
 
 def _create_logger(name: str, config_key: str) -> logging.Logger:

@@ -1,11 +1,7 @@
-from server.config_utils.Config import Config
-import os
+from property_record_web_scraping.server.config_utils.Config import Config
 
-## This should make sure the config details are initialized early.
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.dirname(current_dir)
-config_source_dir = os.path.join(parent_dir, 'config')
-Config.initialize(source=config_source_dir)
+## Initialize config with correct path - singleton pattern ensures this only happens once
+Config.initialize()  # Uses default config directory from get_config_dir()
 
 ## Export the class to be used.
 __all__ = ['Config']

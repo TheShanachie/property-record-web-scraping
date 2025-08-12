@@ -1,0 +1,14 @@
+include README.md
+include LICENSE
+recursive-include src/property_record_web_scraping/server/config *.yaml
+recursive-include src/property_record_web_scraping/server/build/docs *
+include src/property_record_web_scraping/server/build/build.sh
+include src/property_record_web_scraping/server/logs/.gitkeep
+include src/property_record_web_scraping/server/build/bin/.gitkeep
+
+# Exclude binaries and logs
+recursive-exclude * *.log
+recursive-exclude src/property_record_web_scraping/server/build/bin/chrome-linux64 *
+recursive-exclude src/property_record_web_scraping/server/build/bin/chromedriver-linux64 *
+prune src/property_record_web_scraping/server/build/bin/chrome-linux64
+prune src/property_record_web_scraping/server/build/bin/chromedriver-linux64

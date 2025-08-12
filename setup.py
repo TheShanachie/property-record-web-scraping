@@ -10,8 +10,8 @@ class InstallChromeCommand(install):
         super().run()
 
         # Run your installer script
-        project_root = os.path.dirname(os.path.abspath(__file__))
-        script_path = os.path.join(project_root, "src", "property_record_web_scraping", "server", "build.py")
+        # During installation, use simple relative path from setup.py location
+        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src", "property_record_web_scraping", "server", "build.py")
 
         print("🔧 Installing Chrome and ChromeDriver...")
         runpy.run_path(script_path, run_name="__main__")
