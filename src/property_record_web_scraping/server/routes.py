@@ -3,7 +3,8 @@ from typing import Callable, Tuple, Any, Dict, Optional, List
 from pydantic import ValidationError
 from property_record_web_scraping.server.events import EventsHandler
 from property_record_web_scraping.server.models import ActionInput, ActionOutput
-import time, json, uuid, traceback
+from property_record_web_scraping.server.server_cleanup import server_cleanup
+import time, json, uuid, traceback, os
 from functools import wraps
 from property_record_web_scraping.server.logging_utils.loggers import flask_app_interactions_logger
 
@@ -79,7 +80,6 @@ def log_flask_endpoint_io(logger):
             return response
         return wrapper
     return decorator
-
 
 @scraping_bp.route('/scrape', methods=['POST'])
 @log_flask_endpoint_io(flask_app_interactions_logger)

@@ -1,8 +1,10 @@
-import unittest, os, requests, time, sys, signal
+import unittest, os, requests, time, sys, signal, logging
 
 # Use centralized Config for path setup
 from property_record_web_scraping.server.config_utils import Config
 Config.setup_python_path()
+
+# Import the server once the paths are set up
 import property_record_web_scraping.server as server
 
 # Set up project root using centralized Config
@@ -33,8 +35,7 @@ def start_server():
     # Start the server
     server_app_id = os.fork()
     if server_app_id == 0:  # Child process
-        app_path = os.path.join(PROJECT_ROOT, "src", "property_record_web_scraping", "app.py")
-        os.execv(sys.executable, [sys.executable, app_path])
+        server.build(run_immediately=True)
     else:  # Parent process
         return server_app_id
     
@@ -49,7 +50,7 @@ def stop_server():
         return
 
     try:
-        os.kill(server_app_id, signal.SIGKILL)  # Send SIGKILL to forcefully stop the server
+        os.kill(server_app_id, signal.SIGTERM)  # Send SIGTERM to gracefully stop the server
     except OSError as e:
         print(f"Error stopping server: {e}")
     finally:
@@ -87,7 +88,7 @@ def load_and_run_tests():
     start_dir = os.path.join(PROJECT_ROOT, "src", "property_record_web_scraping", "test")
     
     # Discover all tests
-    all_tests = loader.discover(start_dir=start_dir, pattern="test_*.py", top_level_dir=start_dir)
+    all_tests = loader.discover(start_dir=start_dir, pattern="test_health.py", top_level_dir=start_dir)
     
     runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
     

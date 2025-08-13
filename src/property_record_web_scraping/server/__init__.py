@@ -34,7 +34,17 @@ install_chrome_and_driver_fixed_dirs(
     
 # Import the main server application, create it, then expose it.
 from property_record_web_scraping.server.app import _create_app
-app = _create_app()
+def build(run_immediately: bool = False):
+    """ 
+    Create and deliver a flask app object for the web scraping program.
+    
+    Args:
+    
+    """
+    app = _create_app()
+    if run_immediately:
+        app.run()
+    return app
 
-# Expose the app for use in other modules
-__all__ = ['app']
+# Expose the app and factory functions for use in other modules
+__all__ = ['build']
