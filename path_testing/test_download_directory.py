@@ -22,7 +22,7 @@ def test_download_directory_resolution():
     
     # Test 1: Check PhotoScraper hardcoded path
     print("\n1. Testing PhotoScraper hardcoded download directory...")
-    test_path = "./Logs/TempEmpty"  # This is what PhotoScraper uses
+    test_path = "./server/logs/tempempty"  # This is what PhotoScraper uses
     resolved_path = Config.resolve_path(test_path)
     print(f"   PhotoScraper path: '{test_path}' → '{resolved_path}'")
     
@@ -36,7 +36,7 @@ def test_download_directory_resolution():
     print("\n2. Testing config download directory...")
     Config.initialize()
     selenium_config = Config.get_config(['selenium_chrome'])
-    config_download_dir = selenium_config.get('experimental-chrome-options', {}).get('download.default_directory')
+    config_download_dir = selenium_config.get('chrome-paths', {}).get('download-directory-path')
     
     print(f"   Config download dir: {config_download_dir}")
     
@@ -46,56 +46,50 @@ def test_download_directory_resolution():
         print(f"   ❌ Config download directory issue: {config_download_dir}")
         return False
     
-    # Test 3: Check if directories exist or can be created
-    print("\n3. Testing directory existence/creation...")
+    # Test 3: Check if directories exist
+    print("\n3. Testing directory existence...")
     
     # Test PhotoScraper directory
     photoscraper_dir = Path(resolved_path)
     if photoscraper_dir.exists():
         print(f"   ✅ PhotoScraper directory exists: {photoscraper_dir}")
     else:
-        print(f"   ⚠️  PhotoScraper directory doesn't exist (will be created): {photoscraper_dir}")
-        try:
-            photoscraper_dir.mkdir(parents=True, exist_ok=True)
-            print(f"   ✅ Successfully created PhotoScraper directory")
-        except Exception as e:
-            print(f"   ❌ Failed to create PhotoScraper directory: {e}")
-            return False
+        print(f"   ❌ PhotoScraper directory doesn't exist: {photoscraper_dir}")
+        print(f"   Required directory must be created in the project structure")
+        return False
     
     # Test config download directory
     config_dir = Path(config_download_dir)
     if config_dir.exists():
         print(f"   ✅ Config download directory exists: {config_dir}")
     else:
-        print(f"   ⚠️  Config download directory doesn't exist (will be created): {config_dir}")
-        try:
-            config_dir.mkdir(parents=True, exist_ok=True)
-            print(f"   ✅ Successfully created config download directory")
-        except Exception as e:
-            print(f"   ❌ Failed to create config download directory: {e}")
-            return False
+        print(f"   ❌ Config download directory doesn't exist: {config_dir}")
+        print(f"   Required directory must be created in the project structure")
+        return False
     
     # Test 4: Verify they're accessible/writable
     print("\n4. Testing directory write access...")
     
     # Test PhotoScraper directory write access
-    test_file1 = photoscraper_dir / "test_write.tmp"
     try:
-        test_file1.write_text("test")
-        test_file1.unlink()  # Clean up
-        print(f"   ✅ PhotoScraper directory is writable")
+        if os.access(photoscraper_dir, os.W_OK):
+            print(f"   ✅ PhotoScraper directory is writable")
+        else:
+            print(f"   ❌ PhotoScraper directory not writable: {photoscraper_dir}")
+            return False
     except Exception as e:
-        print(f"   ❌ PhotoScraper directory not writable: {e}")
+        print(f"   ❌ Error checking PhotoScraper directory access: {e}")
         return False
     
     # Test config directory write access
-    test_file2 = config_dir / "test_write.tmp"
     try:
-        test_file2.write_text("test")
-        test_file2.unlink()  # Clean up
-        print(f"   ✅ Config download directory is writable")
+        if os.access(config_dir, os.W_OK):
+            print(f"   ✅ Config download directory is writable")
+        else:
+            print(f"   ❌ Config download directory not writable: {config_dir}")
+            return False
     except Exception as e:
-        print(f"   ❌ Config download directory not writable: {e}")
+        print(f"   ❌ Error checking config directory access: {e}")
         return False
     
     print("\n✅ All download directory tests passed!")

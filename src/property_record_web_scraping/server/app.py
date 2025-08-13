@@ -72,6 +72,9 @@ def _override_run_method(app):
         port = port or app.config.get("PORT", 5000)
         debug = debug if debug is not None else app.config.get("DEBUG", False)
         
+        print(f"DEBUG: host='{host}' (type: {type(host)}, repr: {repr(host)})")
+        print(f"DEBUG: port={port} (type: {type(port)})")
+        
         return _original_run(host=host, port=port, debug=debug, **options)
     
     # Replace the run method

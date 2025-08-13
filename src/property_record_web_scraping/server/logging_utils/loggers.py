@@ -18,7 +18,7 @@ def _create_logger(name: str, config_key: str) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)  # Set the logger to DEBUG level
     config = Config.get_config(['logging_utils', 'loggers', config_key])
-    logdir = Config.get_config(['logging_utils', 'log-dir'])
+    logdir = Config.get_config(['logging_utils', 'log-dir-path'])
     os.makedirs(logdir, exist_ok=True)  # Ensure the log directory exists
     logger.propagate = False  # Prevent propagation to root logger
     
@@ -112,7 +112,7 @@ resource_management_logger = _create_logger('resource_management', 'resource_man
         
 #         ### Program Logs ###
 #         self.logging_config = Config.get_config("logging_utils")
-#         self.logging_dir = self.logging_config['log-dir']
+#         self.logging_dir = self.logging_config['log-dir-path']
 #         for handler in self.logging_config['file-handlers']:
             
 #             # Create a file handler

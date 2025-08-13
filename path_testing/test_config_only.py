@@ -39,10 +39,10 @@ def test_path_resolution():
     # Test 2: Test resolve_path method directly
     print("\n2. Testing resolve_path method...")
     test_paths = [
-        "./src/property_record_web_scraping/server/build/bin/chrome-linux64/chrome",
-        "./src/property_record_web_scraping/server/logs/",
-        "./src/property_record_web_scraping/server/logs/tempempty/",
-        "./src/property_record_web_scraping/server/build/bin/chromedriver-linux64/chromedriver"
+        "./server/build/bin/chrome-linux64/chrome",
+        "./server/logs/",
+        "./server/logs/tempempty/",
+        "./server/build/bin/chromedriver-linux64/chromedriver"
     ]
     
     for test_path in test_paths:
@@ -62,18 +62,19 @@ def test_path_resolution():
     
     # Test selenium_chrome config
     selenium_config = Config.get_config(['selenium_chrome'])
-    print(f"   Chrome path from config: {selenium_config.get('chrome-path')}")
-    print(f"   ChromeDriver path from config: {selenium_config.get('chrome-driver-path')}")
+    chrome_paths = selenium_config.get('chrome-paths', {})
+    print(f"   Chrome path from config: {chrome_paths.get('chrome-binary-path')}")
+    print(f"   ChromeDriver path from config: {chrome_paths.get('chrome-driver-path')}")
     
     # Verify these are now absolute paths
-    chrome_path = selenium_config.get('chrome-path')
+    chrome_path = chrome_paths.get('chrome-binary-path')
     if chrome_path and Path(chrome_path).is_absolute():
         print("   ✅ Chrome path resolved to absolute")
     else:
         print(f"   ❌ Chrome path still relative: {chrome_path}")
         return False
         
-    chromedriver_path = selenium_config.get('chrome-driver-path')
+    chromedriver_path = chrome_paths.get('chrome-driver-path')
     if chromedriver_path and Path(chromedriver_path).is_absolute():
         print("   ✅ ChromeDriver path resolved to absolute")
     else:
@@ -81,7 +82,7 @@ def test_path_resolution():
         return False
     
     # Test logging config
-    log_dir = Config.get_config(['logging_utils', 'log-dir'])
+    log_dir = Config.get_config(['logging_utils', 'log-dir-path'])
     print(f"   Log directory from config: {log_dir}")
     if log_dir and Path(log_dir).is_absolute():
         print("   ✅ Log directory resolved to absolute")
@@ -89,8 +90,8 @@ def test_path_resolution():
         print(f"   ❌ Log directory still relative: {log_dir}")
         return False
     
-    # Test download directory in experimental options
-    download_dir = selenium_config.get('experimental-chrome-options', {}).get('download.default_directory')
+    # Test download directory in chrome-paths
+    download_dir = chrome_paths.get('download-directory-path')
     print(f"   Download directory from config: {download_dir}")
     if download_dir and Path(download_dir).is_absolute():
         print("   ✅ Download directory resolved to absolute")

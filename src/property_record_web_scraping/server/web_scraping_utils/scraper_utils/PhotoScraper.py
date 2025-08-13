@@ -45,7 +45,7 @@ def scrape_current_photo(driver: WebDriver):
         # Some variables.
         ## Get download directory from config
         selenium_config = Config.get_config(['selenium_chrome'])
-        download_dir = selenium_config['experimental-chrome-options']['download.default_directory']
+        download_dir = selenium_config['chrome-paths']['download-directory-path']
         
         # This function expects some conditions prior to execution:
         ## The download directory must exist.

@@ -1,14 +1,22 @@
 
-# Chrome Binary Path
-chrome-path: "./src/property_record_web_scraping/server/build/bin/chrome-linux64/chrome" # Path to the Chrome binary
-chrome-driver-path: "./src/property_record_web_scraping/server/build/bin/chromedriver-linux64/chromedriver" # Path to the ChromeDriver binary
+# Chrome paths that need resolution
+chrome-paths:
+  chrome-binary-path: "./server/build/bin/chrome-linux64/chrome" # Path to the Chrome binary
+  chrome-driver-path: "./server/build/bin/chromedriver-linux64/chromedriver" # Path to the ChromeDriver binary
+  download-directory-path: "./server/logs/tempempty/" # Default download directory
+
+# Chrome options (passed directly to driver)
 chrome-options:
 - "--headless" # Remove this if you want to see the browser during simulation
 - "--no-sandbox"
+
+# Experimental options (passed directly to Chrome - paths will be populated from resolved paths)
 experimental-chrome-options:
-  download.default_directory: "./src/property_record_web_scraping/server/logs/tempempty/" # Default download directory
+  download.default_directory: "" # Will be populated from resolved download-directory-path
   download.prompt_for_download: false # Disable download prompt
   download.directory_upgrade: true # Allow directory upgrade
   download.safebrowsing.enabled: false # Disable safe browsing
   profile.default_content_setting_values.automatic_downloads: 1 # Allow automatic downloads
+
+# Website URL
 address-search-url: "https://www.ncpub.org/_web/Search/Disclaimer.aspx?FromUrl=../search/commonsearch.aspx?mode=address"

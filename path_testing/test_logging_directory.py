@@ -27,7 +27,7 @@ def test_logging_config_resolution():
     print("\n1. Testing log directory path resolution...")
     Config.initialize()
     
-    log_dir = Config.get_config(['logging_utils', 'log-dir'])
+    log_dir = Config.get_config(['logging_utils', 'log-dir-path'])
     print(f"   Log directory from config: {log_dir}")
     
     if not log_dir:
@@ -41,29 +41,26 @@ def test_logging_config_resolution():
         
     print("   ✅ Log directory resolved to absolute path")
     
-    # Test 2: Verify log directory can be created
-    print("\n2. Testing log directory creation...")
+    # Test 2: Verify log directory exists
+    print("\n2. Testing log directory existence...")
     
     if log_path.exists():
-        print(f"   ✅ Log directory already exists: {log_path}")
+        print(f"   ✅ Log directory exists: {log_path}")
     else:
-        print(f"   ⚠️  Log directory doesn't exist, will be created: {log_path}")
-        try:
-            log_path.mkdir(parents=True, exist_ok=True)
-            print("   ✅ Successfully created log directory")
-        except Exception as e:
-            print(f"   ❌ Failed to create log directory: {e}")
-            return False
+        print(f"   ❌ Log directory doesn't exist: {log_path}")
+        print(f"   Required directory must be created in the project structure")
+        return False
     
     # Test 3: Verify log directory is writable
     print("\n3. Testing log directory write access...")
-    test_file = log_path / "test_write.tmp"
     try:
-        test_file.write_text("test log content")
-        test_file.unlink()  # Clean up
-        print("   ✅ Log directory is writable")
+        if os.access(log_path, os.W_OK):
+            print("   ✅ Log directory is writable")
+        else:
+            print(f"   ❌ Log directory not writable: {log_path}")
+            return False
     except Exception as e:
-        print(f"   ❌ Log directory not writable: {e}")
+        print(f"   ❌ Error checking log directory access: {e}")
         return False
     
     print("\n✅ All logging config resolution tests passed!")
@@ -82,7 +79,7 @@ def test_logger_creation():
         ('resource_management', 'resource_management')
     ]
     
-    log_dir = Path(Config.get_config(['logging_utils', 'log-dir']))
+    log_dir = Path(Config.get_config(['logging_utils', 'log-dir-path']))
     
     for logger_name, config_key in logger_configs:
         print(f"\n   Testing {logger_name} logger...")
@@ -145,7 +142,7 @@ def test_logging_from_different_directory():
                 logger.info("Test message from different working directory")
                 
                 # Verify log directory was resolved correctly
-                log_dir = Config.get_config(['logging_utils', 'log-dir'])
+                log_dir = Config.get_config(['logging_utils', 'log-dir-path'])
                 log_path = Path(log_dir)
                 
                 if log_path.is_absolute() and log_path.exists():

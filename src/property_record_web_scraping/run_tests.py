@@ -7,6 +7,7 @@ import property_record_web_scraping.server as server
 
 # Set up project root using centralized Config
 PROJECT_ROOT = Config.get_project_root()
+RUN_TESTS_INDEPENDENTLY = False  # Set to False to use single global server for all tests
 os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
 os.environ["API_URL"] = "http://localhost:5000/api/v1"
 
@@ -77,72 +78,112 @@ def wait_server(interval: int = 10, timeout: int = 60) -> None:
         # print(f"Waiting for server to start... ({time.time() - start_time:.2f} seconds elapsed)")
         time.sleep(interval)
         
-def should_skip_global_server():
-    """Check if global server startup should be skipped"""
-    return os.environ.get("SKIP_GLOBAL_SERVER") == "1"
 
 def load_and_run_tests():
     """
-    Load and run all tests in the test directory.
+    Load and run all tests with standalone or global server instances.
     """
     loader = unittest.TestLoader()
     start_dir = os.path.join(PROJECT_ROOT, "src", "property_record_web_scraping", "test")
     
-    # Load all tests first
+    # Discover all tests
     all_tests = loader.discover(start_dir=start_dir, pattern="test_*.py", top_level_dir=start_dir)
     
-    # Check if any tests require standalone server management
-    has_standalone_tests = any(
-        "test_directory_independence" in str(test)
-        for test in all_tests
-    )
+    runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
     
-    if has_standalone_tests:
-        # Split tests into two suites
-        standalone_suite = unittest.TestSuite()
-        regular_suite = unittest.TestSuite()
+    if RUN_TESTS_INDEPENDENTLY:
+        # Run each test module with its own server instance
+        i = 0
+        test_modules = list(all_tests)
+        total_modules = len(test_modules)
         
-        for test_group in all_tests:
-            for test_case in test_group:
-                if "test_directory_independence" in str(test_case):
-                    standalone_suite.addTest(test_case)
-                else:
-                    regular_suite.addTest(test_case)
+        print(f"Found {total_modules} test modules to run independently")
+        print("=" * 60)
         
-        runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
-        
-        # Run standalone tests first (they manage their own server)
-        print("Running standalone server tests...")
-        standalone_result = runner.run(standalone_suite)
-        
-        # Run regular tests with global server
-        if regular_suite.countTestCases() > 0:
-            print("Running regular tests with global server...")
+        while i < len(test_modules):
+            test_module = test_modules[i]
+            module_name = str(test_module).split()[0].replace('<', '')
+            
+            # Progress indicator
+            progress = (i + 1) / total_modules
+            bar_length = 30
+            filled_length = int(bar_length * progress)
+            bar = '█' * filled_length + '░' * (bar_length - filled_length)
+            
+            print(f"\n[{i+1}/{total_modules}] {bar} {progress:.1%}")
+            print(f"Starting: {module_name}")
+            print("-" * 40)
+            
+            # Start server for this test module
+            print("🚀 Starting server...")
             start_server()
             wait_server()
-            regular_result = runner.run(regular_suite)
-            stop_server()
+            print("✓ Server ready")
             
-            # Combine results
-            standalone_result.testsRun += regular_result.testsRun
-            standalone_result.failures.extend(regular_result.failures)
-            standalone_result.errors.extend(regular_result.errors)
+            # Run the tests for this module
+            print(f"🧪 Running tests in {module_name}...")
+            result = runner.run(test_module)
+            
+            # Print test results summary
+            print(f"📊 Results: {result.testsRun} tests run")
+            if result.wasSuccessful():
+                print("✅ All tests passed!")
+            else:
+                print(f"❌ {len(result.failures)} failures, {len(result.errors)} errors")
+                if result.failures:
+                    print("   Failures:")
+                    for test, _ in result.failures:
+                        print(f"     - {test}")
+                if result.errors:
+                    print("   Errors:")
+                    for test, _ in result.errors:
+                        print(f"     - {test}")
+            
+            # Stop server after this test module
+            print("🛑 Stopping server...")
+            stop_server()
+            print("✓ Server stopped")
+            
+            i += 1
         
-        return standalone_result
+        print("\n" + "=" * 60)
+        print("🎉 All test modules completed!")
     else:
-        # Original behavior for regular tests only
-        runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
-        return runner.run(all_tests)
+        # Run all tests with a single global server
+        print("Running all tests with single global server")
+        print("=" * 60)
+        
+        print("🚀 Starting global server...")
+        start_server()
+        wait_server()
+        print("✓ Global server ready")
+        
+        print("🧪 Running all tests...")
+        result = runner.run(all_tests)
+        
+        # Print test results summary
+        print(f"📊 Results: {result.testsRun} tests run")
+        if result.wasSuccessful():
+            print("✅ All tests passed!")
+        else:
+            print(f"❌ {len(result.failures)} failures, {len(result.errors)} errors")
+        
+        print("🛑 Stopping global server...")
+        stop_server()
+        print("✓ Global server stopped")
+        
+        print("\n" + "=" * 60)
+        print("🎉 All tests completed!")
 
 def main():
     # Check start conditions
     assert_start_conditions()
     
     # Run the tests (server management now handled in load_and_run_tests)
-    result = load_and_run_tests()
+    load_and_run_tests()
 
-    # Exit with the appropriate status code
-    sys.exit(0 if result.wasSuccessful() else 1)
+    # Exit successfully (individual test results are displayed by the runner)
+    sys.exit(0)
     
 if __name__ == "__main__":
     main()

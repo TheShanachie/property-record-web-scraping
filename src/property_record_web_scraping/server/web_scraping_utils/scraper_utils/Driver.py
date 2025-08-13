@@ -72,17 +72,19 @@ class Driver:
         self.chrome_options.add_argument("--incognito")
 
         # Set binary location for chrome
-        self.chrome_options.binary_location = self.config["chrome-path"]
+        self.chrome_options.binary_location = self.config["chrome-paths"]["chrome-binary-path"]
             
         ## Set path to chromedriver as per configuration
-        self.webdriver_service = Service(self.config["chrome-driver-path"])
+        self.webdriver_service = Service(self.config["chrome-paths"]["chrome-driver-path"])
         
         ## Set the website path
         self.url = self.config["address-search-url"]
         
         ## Experimental options
         # This is for downloading files like images.
-        self.config["experimental-chrome-options"]["download.default_directory"] = str(Config.resolve_path(self.config["experimental-chrome-options"]["download.default_directory"]))
+        # Resolve the download directory path and set it to the chrome options
+        resolved_download_path = str(Config.resolve_path(self.config["chrome-paths"]["download-directory-path"]))
+        self.config["experimental-chrome-options"]["download.default_directory"] = resolved_download_path
         self.chrome_options.add_experimental_option("prefs", self.config["experimental-chrome-options"])            
         
         # Choose Chrome Browser

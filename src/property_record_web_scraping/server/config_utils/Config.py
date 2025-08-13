@@ -92,7 +92,14 @@ class Config:
     
     @classmethod
     def get_package_root(cls) -> Path:
-        """Get the package root (src/property_record_web_scraping)."""
+        """
+        Get the package root directory.
+        
+        This file is always located at: property_record_web_scraping/server/config_utils/Config.py
+        Go up 3 levels: config_utils -> server -> property_record_web_scraping
+        
+        Works in both development (src/) and installed (site-packages/) environments.
+        """
         if cls._package_root is not None:
             return cls._package_root
             
@@ -119,13 +126,13 @@ class Config:
         Universal path resolver that handles all path types.
         
         This method should be used by all components needing path resolution.
+        All relative paths are resolved from the package root for uniform behavior
+        between development and packaged environments.
         
         Args:
             path: Can be:
                 - Absolute path (starts with /)
-                - Config-style relative path (starts with ./src/property_record_web_scraping/)
-                - Generic relative path (starts with ./)
-                - Plain relative path (assumed relative to project root)
+                - Relative path (starts with ./ or plain relative)
         
         Returns:
             Path: Absolute resolved path
@@ -136,27 +143,17 @@ class Config:
         if path.startswith('/'):
             # Already absolute
             return Path(path)
-        elif path.startswith('./src/property_record_web_scraping/'):
-            # Config-style path - resolve from project root
-            clean_path = path[2:]  # Remove './'
-            return cls.get_project_root() / clean_path
         elif path.startswith('./'):
-            # Generic relative path from project root
-            return cls.get_project_root() / path[2:]
+            # All relative paths resolve from package root
+            return cls.get_package_root() / path[2:]
         else:
-            # Plain relative path - assume from project root
-            return cls.get_project_root() / path
+            # Plain relative path - assume from package root
+            return cls.get_package_root() / path
     
     @classmethod
     def get_build_dir(cls) -> Path:
-        """Get the build directory based on installation context."""
-        project_root = cls.get_project_root()
-        if (project_root / "pyproject.toml").exists():
-            # Development mode
-            return project_root / "src" / "property_record_web_scraping" / "server" / "build" / "bin"
-        else:
-            # Installed package mode
-            return cls.get_package_root() / "server" / "build" / "bin"
+        """Get the build directory. Always uses package root for uniform behavior."""
+        return cls.get_package_root() / "server" / "build" / "bin"
     
     @classmethod
     def get_config_dir(cls) -> Path:
@@ -182,27 +179,16 @@ class Config:
     def _resolve_paths_where_possible(cls, config: dict) -> dict:
         """
         Recursively resolve relative paths in the configuration dictionary.
-        This method will traverse the dictionary and resolve any string values that are relative paths.
-        Paths that can be resolved must start with a relative path (i.e., not an absolute path). They
-        must start with ./src/server/<...> pattern.
+        Only processes keys ending with '-path' or '_path' for explicit path resolution.
         Args:
             config (dict): The configuration dictionary to process.
         Returns:
             dict: The configuration dictionary with resolved paths.
         """
-        def _valid_format(path: str) -> bool:
-            """
-            Check if the path is in a valid format to be resolved.
-            Enhanced to use centralized path resolution.
-            """
-            return (path.startswith('./src/property_record_web_scraping/') or 
-                    path.startswith('./') or
-                    (not path.startswith('/') and len(path) > 0))
-        
         for key, value in config.items():
             if isinstance(value, dict):
                 config[key] = cls._resolve_paths_where_possible(value)
-            elif isinstance(value, str) and _valid_format(value):
+            elif isinstance(value, str) and (key.endswith('-path') or key.endswith('_path')):
                 config[key] = cls._resolve_relative_path(value)
             # If the value is not a string or dict, we leave it as is.
             # print(json.dumps({key: value}, indent=2))  # Debugging output to see resolved paths
