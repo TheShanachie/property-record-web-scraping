@@ -63,14 +63,36 @@ def install_chrome_and_driver_fixed_dirs(
     }
 
 
+# def _download_and_extract(url: str, dest_dir: str) -> None:
+#     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".zip")
+#     os.close(tmp_fd)
+#     try:
+#         with urllib.request.urlopen(url) as resp, open(tmp_path, "wb") as f:
+#             shutil.copyfileobj(resp, f)
+#         with zipfile.ZipFile(tmp_path) as z:
+#             z.extractall(dest_dir)
+#     finally:
+#         os.remove(tmp_path)
+
 def _download_and_extract(url: str, dest_dir: str) -> None:
+
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".zip")
     os.close(tmp_fd)
     try:
         with urllib.request.urlopen(url) as resp, open(tmp_path, "wb") as f:
             shutil.copyfileobj(resp, f)
         with zipfile.ZipFile(tmp_path) as z:
-            z.extractall(dest_dir)
+            # Find the top-level directory in the zip
+            top_level = z.namelist()[0].split('/')[0]
+            for member in z.namelist():
+                # Only extract files inside the top-level directory
+                if member.startswith(top_level + '/') and not member.endswith('/'):
+                    # Remove the top-level directory from the path
+                    target = member[len(top_level) + 1 :]
+                    target_path = os.path.join(dest_dir, target)
+                    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                    with z.open(member) as source, open(target_path, "wb") as target_file:
+                        shutil.copyfileobj(source, target_file)
     finally:
         os.remove(tmp_path)
 
@@ -102,7 +124,7 @@ def is_built(chrome_dir: str, driver_dir: str) -> bool:
 
     return chrome_installed and driver_installed
 
-def build() -> None:
+def build_binaries() -> None:
     """
     If the dependencies aren't built, build them.
     """
@@ -116,10 +138,10 @@ def build() -> None:
             driver_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chromedriver-linux64.zip",
             build_dir=build_dir,
             check_exists=True,
-            overwrite=True
+            overwrite=False
         )
 
 
 if __name__ == "__main__":
     # Build the project dependencies
-    build()
+    build_binaries()
