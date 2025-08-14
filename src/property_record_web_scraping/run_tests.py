@@ -89,7 +89,7 @@ def load_and_run_tests():
     Load and run all tests with standalone or global server instances.
     """
     loader = unittest.TestLoader()
-    start_dir = os.path.join(PROJECT_ROOT, "src", "property_record_web_scraping", "test")
+    start_dir = os.path.join(PROJECT_ROOT, "test")
     
     # Discover all tests
     all_tests = loader.discover(start_dir=start_dir, pattern="test_*.py", top_level_dir=start_dir)

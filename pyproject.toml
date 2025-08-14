@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "property-record-web-scraping"
-version = "0.0.8"
+version = "0.0.11"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
     { name = "TheShanachie" },
 ]
-description = "..."
+description = "Property record web scraping API built with Flask and Selenium."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -68,6 +68,7 @@ dependencies = [
 classifiers = [
     "Programming Language :: Python :: 3.12",
     "Operating System :: POSIX :: Linux",
+    "Development Status :: 2 - Pre-Alpha"
 ]
 
 [project.urls]
@@ -75,14 +76,30 @@ Homepage = "https://github.com/TheShanachie/property-record-web-scraping"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = {find = {where = ["src"], exclude = ["*.log", "*chromedriver*", "*chrome-linux*"]}} 
+packages = {find = {where = ["src"]}}
 
 [tool.setuptools.package-data]
-property_record_web_scraping = ["server/config/*.yaml", "server/build/build.sh", "server/build/docs/*.md", "server/logs/.gitkeep", "server/build/bin/.gitkeep"]
+property_record_web_scraping = [
+    "server/config/*.yaml",
+    "server/build/build.sh",
+    "server/build/docs/*.md",
+    "server/logs/.gitkeep",
+    "test/**/*.py",
+    "test/**/__init__.py"
+]
+
+[tool.setuptools.exclude-package-data]
+property_record_web_scraping = [
+    "server/build/bin/chrome-linux64/*",
+    "server/build/bin/chromedriver-linux64/*",
+    "server/logs/tempempty/*",
+    "**/__pycache__/*",
+    "**/__pycache__/",
+    "*.log",
+    "*.tmp",
+    "*.bak"
+]
 
 [project.scripts]
 run-app = "property_record_web_scraping.app:main"
 test-app = "property_record_web_scraping.run_tests:main"
-
-
-
