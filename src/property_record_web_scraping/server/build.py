@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import zipfile
 import urllib.request
+from property_record_web_scraping.server.config_utils import Config
 
 
 def install_chrome_and_driver_fixed_dirs(
@@ -86,12 +87,39 @@ def _ensure_executable(path: str) -> None:
         st = os.stat(path)
         os.chmod(path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
+def is_built(chrome_dir: str, driver_dir: str) -> bool:
+    """
+    Return whether the chrome and chromedriver binaries are installed.
+    """
+    chrome_installed = False
+    driver_installed = False
+
+    try:
+        chrome_installed = _locate_binary(chrome_dir, ["chrome", "chrome.exe"]) is not None
+        driver_installed = _locate_binary(driver_dir, ["chromedriver", "chromedriver.exe"]) is not None
+    except RuntimeError:
+        pass
+
+    return chrome_installed and driver_installed
+
+def build() -> None:
+    """
+    If the dependencies aren't built, build them.
+    """
+    build_dir = Config.get_build_dir()
+    if not is_built(
+        chrome_dir=os.path.join(build_dir, "chrome-linux64"),
+        driver_dir=os.path.join(build_dir, "chromedriver-linux64"),
+    ):
+        install_chrome_and_driver_fixed_dirs(
+            chrome_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chrome-linux64.zip",
+            driver_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chromedriver-linux64.zip",
+            build_dir=build_dir,
+            check_exists=True,
+            overwrite=True
+        )
+
 
 if __name__ == "__main__":
-    # Use centralized Config for consistent path resolution
-    from property_record_web_scraping.server.config_utils import Config
-    build_dir = str(Config.get_build_dir())
-    result = install_chrome_and_driver_fixed_dirs(
-        chrome_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chrome-linux64.zip",
-        driver_url="https://storage.googleapis.com/chrome-for-testing-public/138.0.7201.0/linux64/chromedriver-linux64.zip",
-        build_dir=build_dir, check_exists=True, overwrite=True)
+    # Build the project dependencies
+    build()

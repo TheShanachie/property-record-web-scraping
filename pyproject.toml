@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "property-record-web-scraping"
-version = "0.0.6"
+version = "0.0.8"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
@@ -23,6 +23,7 @@ dependencies = [
     "click==8.2.1",
     "dnspython==2.7.0",
     "Flask==3.1.1",
+    "gunicorn==23.0.0",
     "h11==0.16.0",
     "idna==3.10",
     "itsdangerous==2.2.0",

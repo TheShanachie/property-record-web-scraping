@@ -36,11 +36,20 @@ install_chrome_and_driver_fixed_dirs(
 from property_record_web_scraping.server.app import _create_app
 def build(run_immediately: bool = False):
     """ 
-    Create and deliver a flask app object for the web scraping program.
+    Build the application by ensuring all dependencies are ready and creating the Flask app.
+    
+    This method handles:
+    - Path setup and configuration
+    - Chrome and ChromeDriver installation if needed
+    - Flask app creation
     
     Args:
-    
+        run_immediately (bool): If True, runs the Flask app immediately after creation
+        
+    Returns:
+        Flask app instance
     """
+    
     app = _create_app()
     if run_immediately:
         app.run()
