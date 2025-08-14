@@ -178,12 +178,15 @@ class DriverPool:
         """
         with self.lock:
             # 1. Destroy all active drivers that are checked out.
-            checked_out_keys = self.active_drivers.keys()
+            checked_out_keys = list(self.active_drivers.keys())
+            resource_management_logger.debug(f"Shutting down {len(checked_out_keys)} active drivers")
             for key in checked_out_keys:
                 driver = self.active_drivers.pop(key)
                 driver.destroy()
                 
             # 2. Destroy all non-active drivers.
+            pool_size = self.pool.qsize()
+            resource_management_logger.debug(f"Shutting down {pool_size} pooled drivers")
             while not self.pool.empty():
                 driver = self.pool.get()
                 driver.destroy()

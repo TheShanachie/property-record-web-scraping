@@ -18,6 +18,9 @@ def server_cleanup(main_pid: int) -> None:
     # Kill the processes
     _kill_garbage_chrome_processes(garbage_processes)
     
+    # Wait for processes to terminate
+    _wait_for_process_termination(garbage_processes)
+    
     # Collect metadata after killing
     after_metadata = _collect_process_metadata(garbage_processes)
     
@@ -97,3 +100,41 @@ def _kill_garbage_chrome_processes(garbage_processes: List[psutil.Process]) -> N
             print(f"Killed garbage Chrome process: {proc.info['pid']} - {proc.info['name']}")
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
+
+def _wait_for_process_termination(processes: List[psutil.Process], timeout: float = 3.0) -> None:
+    """
+    Wait for processes to terminate after being killed.
+    
+    Args:
+        processes: List of psutil.Process objects that were killed
+        timeout: Maximum time to wait in seconds
+    """
+    if not processes:
+        return
+        
+    print(f"Waiting up to {timeout} seconds for {len(processes)} processes to terminate...")
+    
+    start_time = time.time()
+    remaining_processes = processes.copy()
+    
+    while remaining_processes and (time.time() - start_time) < timeout:
+        # Check which processes are still running
+        still_running = []
+        for proc in remaining_processes:
+            try:
+                if proc.is_running():
+                    still_running.append(proc)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                # Process no longer exists, which is what we want
+                continue
+        
+        remaining_processes = still_running
+        
+        if remaining_processes:
+            time.sleep(0.1)  # Short sleep to avoid busy waiting
+    
+    if remaining_processes:
+        print(f"Warning: {len(remaining_processes)} processes still running after {timeout}s timeout")
+    else:
+        elapsed = time.time() - start_time
+        print(f"All processes terminated successfully in {elapsed:.1f}s")

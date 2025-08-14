@@ -51,6 +51,10 @@ def stop_server():
 
     try:
         os.kill(server_app_id, signal.SIGTERM)  # Send SIGTERM to gracefully stop the server
+        
+        # Wait for the server process to actually terminate
+        _, status = os.waitpid(server_app_id, 0)  # Wait for child process to finish
+        
     except OSError as e:
         print(f"Error stopping server: {e}")
     finally:
@@ -88,7 +92,7 @@ def load_and_run_tests():
     start_dir = os.path.join(PROJECT_ROOT, "src", "property_record_web_scraping", "test")
     
     # Discover all tests
-    all_tests = loader.discover(start_dir=start_dir, pattern="test_health.py", top_level_dir=start_dir)
+    all_tests = loader.discover(start_dir=start_dir, pattern="test_*.py", top_level_dir=start_dir)
     
     runner = unittest.TextTestRunner(verbosity=2, buffer=True, tb_locals=True)
     

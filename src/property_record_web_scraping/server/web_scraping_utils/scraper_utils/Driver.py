@@ -100,6 +100,9 @@ class Driver:
         self.id = Driver._id_counter
         Driver._id_counter += 1
         
+        # Track destruction state to prevent double destruction
+        self._is_destroyed = False
+        
         # Success message
         web_scraping_core_logger.info(msg=f"Driver instance initialized with id - {self.id}")
         
@@ -333,12 +336,22 @@ class Driver:
         
         
     def destroy(self):
+        # Check if already destroyed to prevent double destruction
+        if self._is_destroyed:
+            web_scraping_core_logger.warning(msg=f"Attempted to destroy already destroyed driver instance {self.id}. This indicates a logic error in cleanup sequence.")
+            return
+        
         try:
-            self.driver.close()
-            self.driver.quit()
-            web_scraping_core_logger.info(msg=f"Driver instance {self.id} destroyed successfully.")
+            # Check if there is a driver instance.
+            if self.driver:
+                self.driver.close()
+                self.driver.quit()
+                web_scraping_core_logger.info(msg=f"Driver instance {self.id} destroyed successfully.")
         except RequestException: 
             web_scraping_core_logger.warning(msg=f"Driver instance {self.id} already closed or not connected.")
         except Exception as e:
             web_scraping_core_logger.error(msg=f"Error destroying driver instance {self.id}: {e}")
-            raise Exception(f"Error destroying Driver Instance {self.id}") from e
+            # Don't re-raise during shutdown to allow cleanup to continue
+        finally:
+            # Mark as destroyed regardless of success/failure
+            self._is_destroyed = True
