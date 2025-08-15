@@ -2,6 +2,10 @@
 
 A Flask-based web scraping API for extracting property records from public databases. This proof-of-concept demonstrates asynchronous task management, driver pooling, and structured data extraction using Selenium WebDriver and simulated chrome. This project started as a simple, less flexible web scraping utility as part of a much larger project, but it became something more. It is not intended for professional, commercial, or any real use. This program is build to scrape the existing property database site for Northhampton County, PA. If you use this package, it is recommended that you view the system requirements and install the package in a virtual environment.
 
+
+## Quick Links
+**TestPypi**: [Link to TestPyPi Page](https://test.pypi.org/project/property-record-web-scraping/0.0.15/)
+
 ## Technical Overview
 
 - **Task Management**: ThreadPoolExecutor-based async processing with real-time status tracking
