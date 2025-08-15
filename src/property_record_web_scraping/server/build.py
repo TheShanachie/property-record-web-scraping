@@ -248,7 +248,7 @@ def install_chrome_and_driver_fixed_dirs(
     Install Chrome and ChromeDriver into fixed subdirectories under build_dir.
     """
     print(f"[INFO] Preparing to install Chrome and ChromeDriver in {build_dir}...")
-    assert os.path.isdir(build_dir), f"Build directory does not exist: {build_dir}"
+    os.makedirs(build_dir, exist_ok=True)
 
     chrome_dir = os.path.join(build_dir, "chrome-linux64")
     driver_dir = os.path.join(build_dir, "chromedriver-linux64")
@@ -310,8 +310,6 @@ def _download_and_extract(url: str, dest_dir: str) -> None:
     finally:
         os.remove(tmp_path)
         print(f"[INFO] Removed temporary zip file.")
-
-# ...existing
 
 
 if __name__ == "__main__":

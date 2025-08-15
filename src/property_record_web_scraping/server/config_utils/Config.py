@@ -37,8 +37,7 @@ class Config:
             cls._instance = super(Config, cls).__new__(cls)
             cls._config = {}
         return cls._instance
-    
-    # === CENTRALIZED PATH MANAGEMENT METHODS ===
+
     
     @classmethod
     def get_project_root(cls) -> Path:
@@ -165,8 +164,11 @@ class Config:
         """Get the logs directory."""
         return cls.get_package_root() / "server" / "logs"
     
-    # === ENHANCED EXISTING METHODS ===
-    
+    @classmethod
+    def get_test_methods_dir(cls) -> Path:
+        """ Get the location of test methods for discovery. """
+        return cls.get_package_root() / "test" / "tests"
+
     @classmethod
     def _resolve_relative_path(cls, path: str) -> str:
         """

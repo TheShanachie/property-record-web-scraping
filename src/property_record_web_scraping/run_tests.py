@@ -8,9 +8,9 @@ Config.setup_python_path()
 import property_record_web_scraping.server as server
 
 # Set up project root using centralized Config
-PROJECT_ROOT = Config.get_project_root()
+# PROJECT_ROOT = Config.get_project_root()
 RUN_TESTS_INDEPENDENTLY = False  # Set to False to use single global server for all tests
-os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
+# os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
 os.environ["API_URL"] = "http://localhost:5000/api/v1"
 
 server_app_id = None
@@ -89,7 +89,7 @@ def load_and_run_tests():
     Load and run all tests with standalone or global server instances.
     """
     loader = unittest.TestLoader()
-    start_dir = os.path.join(PROJECT_ROOT, "test")
+    start_dir = Config.get_test_methods_dir()
     
     # Discover all tests
     all_tests = loader.discover(start_dir=start_dir, pattern="test_*.py", top_level_dir=start_dir)

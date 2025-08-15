@@ -1,0 +1,6 @@
+internal-paths:
+  log-dir-path: "./server/logs/"
+  chrome-binary-path: "./server/build/bin/chrome-linux64/chrome" # Path to the Chrome binary
+  chrome-driver-path: "./server/build/bin/chromedriver-linux64/chromedriver" # Path to the ChromeDriver binary
+  download-directory-path: "./server/logs/tempempty/" # Default download directory
+  tests-directory-path: "./test/tests/"
